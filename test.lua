@@ -332,13 +332,6 @@ local Library = {
 }
 Library.__index = Library
 
-local savedColor = Library._config and Library._config._library and Library._config._library.uiColor
-if savedColor then
-	AccentColor = Color3.new(savedColor.R, savedColor.G, savedColor.B)
-	AccentToggle = Library._config._library.uiColorEnabled == true
-	UpdateUIAccentColor()
-end
-
 local function ResolveMethodValue(first, second)
 	if first == Library then
 		return second
@@ -377,6 +370,13 @@ local function UpdateUIAccentColor()
 	UIAccentColor = AccentToggle and AccentColor or DefaultAccentColor
 	UpdateThemeAccent()
 	return UIAccentColor
+end
+
+local savedColor = Library._config and Library._config._library and Library._config._library.uiColor
+if savedColor then
+	AccentColor = Color3.new(savedColor.R, savedColor.G, savedColor.B)
+	AccentToggle = Library._config._library.uiColorEnabled == true
+	UpdateUIAccentColor()
 end
 
 function Library.UIName(first, second)
