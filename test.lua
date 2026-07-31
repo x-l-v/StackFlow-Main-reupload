@@ -1436,54 +1436,50 @@ self.set_background_image = self.SetBackgroundMedia
             end
 
             if object == tab then
-                if object.BackgroundTransparency ~= 0.5 then
-                    local offset = object.LayoutOrder * 42
+                local offset = object.LayoutOrder * 42
 
-                    TweenGUISafe(Pin, TweenInfo.new(0.4, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                        Position = UDim2.new(0, 14, 0, 66 + offset)
-                    })
+                TweenGUISafe(Pin, TweenInfo.new(0.4, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                    Position = UDim2.new(0, 14, 0, 66 + offset)
+                })
 
-                    TweenGUISafe(object, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                        BackgroundTransparency = 0.5
-                    })
+                TweenGUISafe(object, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                    BackgroundTransparency = 0.5
+                })
 
-                    TweenGUISafe(object.TextLabel, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                        TextTransparency = 0,
-                        TextColor3 = Theme.Text
-                    })
+                TweenGUISafe(object.TextLabel, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                    TextTransparency = 0,
+                    TextColor3 = Theme.Text
+                })
 
-                    TweenGUISafe(object.TextLabel.UIGradient, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                        Offset = Vector2.new(1, 0)
-                    })
+                TweenGUISafe(object.TextLabel.UIGradient, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                    Offset = Vector2.new(1, 0)
+                })
 
-                    TweenGUISafe(object.Icon, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                        ImageTransparency = 0,
-                        ImageColor3 = Theme.Accent
-                    })
-                end
+                TweenGUISafe(object.Icon, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                    ImageTransparency = 0,
+                    ImageColor3 = Theme.Accent
+                })
 
                 continue
             end
 
-            if object.BackgroundTransparency ~= 1 then
-                TweenGUISafe(object, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                    BackgroundTransparency = 1
-                })
-                
-                TweenGUISafe(object.TextLabel, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                    TextTransparency = 0.45,
-                    TextColor3 = Theme.SecondaryText
-                })
+            TweenGUISafe(object, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                BackgroundTransparency = 1
+            })
 
-                TweenGUISafe(object.TextLabel.UIGradient, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                    Offset = Vector2.new(0, 0)
-                })
+            TweenGUISafe(object.TextLabel, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                TextTransparency = 0.45,
+                TextColor3 = Theme.SecondaryText
+            })
 
-                TweenGUISafe(object.Icon, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                    ImageTransparency = 0.45,
-                    ImageColor3 = Theme.SecondaryText
-                })
-            end
+            TweenGUISafe(object.TextLabel.UIGradient, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                Offset = Vector2.new(0, 0)
+            })
+
+            TweenGUISafe(object.Icon, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                ImageTransparency = 0.45,
+                ImageColor3 = Theme.SecondaryText
+            })
         end
     end
 
