@@ -73,21 +73,21 @@ local Theme = {
     Background = Color3.fromRGB(8, 8, 10),
     Panel = Color3.fromRGB(16, 18, 24),
     SecondaryPanel = Color3.fromRGB(24, 27, 36),
-    Border = Theme.Border,
-    Outline = Theme.Outline,
-
-    Accent = UIAccentColor,
-    AccentHover = UIAccentColor:Lerp(Theme.Text, 0.15),
-    AccentPressed = UIAccentColor:Lerp(Color3.fromRGB(0, 0, 0), 0.2),
+    Border = Color3.fromRGB(46, 46, 49),
+    Outline = Color3.fromRGB(46, 46, 49),
 
     Text = Color3.fromRGB(225, 227, 235),
-    SecondaryText = Theme.SecondaryText,
+    SecondaryText = Color3.fromRGB(154, 156, 165),
     Disabled = Color3.fromRGB(100, 100, 100),
 
-    Hover = Theme.Hover,
-    ToggleBg = Theme.ToggleBg,
-    SliderBg = Theme.SliderBg,
-    DropdownBg = Theme.SliderBg,
+    Hover = Color3.fromRGB(38, 42, 55),
+    ToggleBg = Color3.fromRGB(140, 140, 150),
+    SliderBg = Color3.fromRGB(35, 38, 48),
+    DropdownBg = Color3.fromRGB(35, 38, 48),
+
+    Accent = UIAccentColor,
+    AccentHover = UIAccentColor:Lerp(Color3.fromRGB(225, 227, 235), 0.15),
+    AccentPressed = UIAccentColor:Lerp(Color3.fromRGB(0, 0, 0), 0.2),
 
     CornerRadius = 6,
     SmallCornerRadius = 3,
@@ -104,80 +104,6 @@ local function UpdateThemeAccent()
     Theme.Accent = UIAccentColor
     Theme.AccentHover = UIAccentColor:Lerp(Theme.Text, 0.15)
     Theme.AccentPressed = UIAccentColor:Lerp(Color3.fromRGB(0, 0, 0), 0.2)
-end
-
-local Animation = {
-    Default = {
-        Fade = function(obj, transparency, duration)
-            return TweenGUISafe(obj, TweenInfo.new(duration or 0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                BackgroundTransparency = transparency
-            })
-        end,
-        Slide = function(obj, position, duration)
-            return TweenGUISafe(obj, TweenInfo.new(duration or 0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                Position = position
-            })
-        end,
-        Scale = function(obj, size, duration)
-            return TweenGUISafe(obj, TweenInfo.new(duration or 0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                Size = size
-            })
-        end,
-        Color = function(obj, color, duration)
-            return TweenGUISafe(obj, TweenInfo.new(duration or 0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                BackgroundColor3 = color
-            })
-        end,
-        Transparency = function(obj, transparency, duration)
-            return TweenGUISafe(obj, TweenInfo.new(duration or 0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                TextTransparency = transparency
-            })
-        end
-    }
-}
-
-local SearchRegistry = {}
-local SearchConnections = {}
-
-local function RegisterSearchItem(name, type, object, parent)
-    table.insert(SearchRegistry, {
-        Name = name,
-        Type = type,
-        Object = object,
-        Parent = parent,
-        OriginalVisible = true
-    })
-end
-
-local function UnregisterSearchItem(object)
-    for i, item in ipairs(SearchRegistry) do
-        if item.Object == object then
-            table.remove(SearchRegistry, i)
-            break
-        end
-    end
-end
-
-local function FilterSearch(query)
-    query = tostring(query or ""):lower()
-
-    if query == "" then
-        for _, item in ipairs(SearchRegistry) do
-            if item.Object and item.Object.Parent then
-                item.Object.Visible = item.OriginalVisible
-            end
-        end
-        return
-    end
-
-    for _, item in ipairs(SearchRegistry) do
-        if not item.Object or not item.Object.Parent then
-            continue
-        end
-
-        local match = item.Name:lower():find(query, 1, true)
-        item.Object.Visible = match ~= nil
-    end
 end
 
 local mouse = Players.LocalPlayer:GetMouse()
@@ -197,7 +123,7 @@ local Connections = setmetatable({
         if not self[connection] then
             return
         end
-    
+
         self[connection]:Disconnect()
         self[connection] = nil
     end,
@@ -206,29 +132,11 @@ local Connections = setmetatable({
             if typeof(value) == 'function' then
                 continue
             end
-    
+
             value:Disconnect()
         end
     end
-}, Connections)
-
-
-local Util = setmetatable({
-    map = function(self: any, value: number, in_minimum: number, in_maximum: number, out_minimum: number, out_maximum: number)
-        return (value - in_minimum) * (out_maximum - out_minimum) / (in_maximum - in_minimum) + out_minimum
-    end,
-    viewport_point_to_world = function(self: any, location: any, distance: number)
-        local unit_ray = workspace.CurrentCamera:ScreenPointToRay(location.X, location.Y)
-
-        return unit_ray.Origin + unit_ray.Direction * distance
-    end,
-    get_offset = function(self: any)
-        local viewport_size_Y = workspace.CurrentCamera.ViewportSize.Y
-
-        return self:map(viewport_size_Y, 0, 2560, 8, 56)
-    end
-}, Util)
-
+})
 
 
 local Config = setmetatable({
@@ -312,7 +220,7 @@ local Config = setmetatable({
     
         return result
     end
-}, Config)
+})
 
 
 local Library = {
@@ -372,9 +280,45 @@ local function UpdateUIAccentColor()
 	return UIAccentColor
 end
 
-local savedColor = Library._config and Library._config._library and Library._config._library.uiColor
+local function DeserializeColor(value)
+	if typeof(value) == "Color3" then
+		return value
+	end
+
+	if typeof(value) ~= "table" then
+		return nil
+	end
+
+	local r = tonumber(value.R) or tonumber(value.r) or tonumber(value[1])
+	local g = tonumber(value.G) or tonumber(value.g) or tonumber(value[2])
+	local b = tonumber(value.B) or tonumber(value.b) or tonumber(value[3])
+
+	if not r or not g or not b then
+		return nil
+	end
+
+	if r > 1 or g > 1 or b > 1 then
+		return Color3.fromRGB(
+			math.clamp(math.floor(r + 0.5), 0, 255),
+			math.clamp(math.floor(g + 0.5), 0, 255),
+			math.clamp(math.floor(b + 0.5), 0, 255)
+		)
+	end
+
+	return Color3.new(math.clamp(r, 0, 1), math.clamp(g, 0, 1), math.clamp(b, 0, 1))
+end
+
+local function PersistAccentConfig()
+	if type(Library._config) == "table" and type(Library._config._library) == "table" then
+		Library._config._library.uiColor = {R = AccentColor.R, G = AccentColor.G, B = AccentColor.B}
+		Library._config._library.uiColorEnabled = AccentToggle
+		Config:save(game.GameId, Library._config)
+	end
+end
+
+local savedColor = DeserializeColor(Library._config and Library._config._library and Library._config._library.uiColor)
 if savedColor then
-	AccentColor = Color3.new(savedColor.R, savedColor.G, savedColor.B)
+	AccentColor = savedColor
 	AccentToggle = Library._config._library.uiColorEnabled == true
 	UpdateUIAccentColor()
 end
@@ -398,7 +342,9 @@ end
 
 function Library.AccentToggle(first, second)
 	AccentToggle = ResolveMethodValue(first, second) == true
-	return UpdateUIAccentColor()
+	UpdateUIAccentColor()
+	PersistAccentConfig()
+	return UIAccentColor
 end
 
 function Library.AccentColor(first, second)
@@ -408,7 +354,9 @@ function Library.AccentColor(first, second)
 		AccentColor = color
 	end
 
-	return UpdateUIAccentColor()
+	UpdateUIAccentColor()
+	PersistAccentConfig()
+	return UIAccentColor
 end
 
 function Library.UIAccent(first, second, third)
@@ -427,12 +375,7 @@ function Library.UIAccent(first, second, third)
 	end
 
 	UpdateUIAccentColor()
-
-	if type(Library._config) == "table" and type(Library._config._library) == "table" then
-		Library._config._library.uiColor = {R = AccentColor.R, G = AccentColor.G, B = AccentColor.B}
-		Library._config._library.uiColorEnabled = AccentToggle
-		Config:save(game.GameId, Library._config)
-	end
+	PersistAccentConfig()
 
 	return UIAccentColor
 end
@@ -601,7 +544,7 @@ function Library.SendNotification(settings)
     Notification.AutomaticSize = Enum.AutomaticSize.Y
 
     local UICorner = Instance.new("UICorner")
-    UICorner.CornerRadius = UDim.new(0, 6)
+    UICorner.CornerRadius = UDim.new(0, 10)
     UICorner.Parent = Notification
 
     local InnerFrame = Instance.new("Frame")
@@ -614,7 +557,7 @@ function Library.SendNotification(settings)
     InnerFrame.AutomaticSize = Enum.AutomaticSize.Y
 
     local InnerUICorner = Instance.new("UICorner")
-    InnerUICorner.CornerRadius = UDim.new(0, 6)
+    InnerUICorner.CornerRadius = UDim.new(0, 10)
     InnerUICorner.Parent = InnerFrame
 
     local InnerStroke = Instance.new("UIStroke")
@@ -656,9 +599,8 @@ function Library.SendNotification(settings)
     Title.FontFace = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
     Title.TextSize = 14
     local textOffset = showIcon and 40 or 12
-    local textWidth = showIcon and 1 - 44 or 1 - 24
 
-    Title.Size = UDim2.new(textWidth, 0, 0, 20)
+    Title.Size = UDim2.new(1, -(textOffset + 8), 0, 20)
     Title.Position = UDim2.fromOffset(textOffset, 10)
     Title.BackgroundTransparency = 1
     Title.TextXAlignment = Enum.TextXAlignment.Left
@@ -674,7 +616,7 @@ function Library.SendNotification(settings)
     Body.TextStrokeTransparency = 0.7
     Body.FontFace = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.Regular, Enum.FontStyle.Normal)
     Body.TextSize = 12
-    Body.Size = UDim2.new(textWidth, 0, 0, 18)
+    Body.Size = UDim2.new(1, -(textOffset + 8), 0, 18)
     Body.Position = UDim2.fromOffset(textOffset, 30)
     Body.BackgroundTransparency = 1
     Body.TextXAlignment = Enum.TextXAlignment.Left
@@ -859,7 +801,7 @@ function Library:create_ui()
     BackgroundMediaHolder.Parent = Container
 
     local BackgroundMediaCorner = Instance.new("UICorner")
-    BackgroundMediaCorner.CornerRadius = UDim.new(0, 16)
+    BackgroundMediaCorner.CornerRadius = UDim.new(0, 14)
     BackgroundMediaCorner.Parent = BackgroundMediaHolder
 
     -- Gradient side bar
@@ -894,7 +836,7 @@ function Library:create_ui()
     CenterImage.ImageTransparency = 1
 
     local UICorner = Instance.new('UICorner')
-    UICorner.CornerRadius = UDim.new(0, 16)
+    UICorner.CornerRadius = UDim.new(0, 14)
     UICorner.Parent = Container
     
     local UIStroke = Instance.new('UIStroke')
@@ -1378,52 +1320,6 @@ self.set_background_image = self.SetBackgroundMedia
     Minimize.BackgroundColor3 = Theme.Text
     Minimize.Parent = Handler
 
-    local SearchIcon = Instance.new('ImageLabel')
-    SearchIcon.Name = 'SearchIcon'
-    SearchIcon.BackgroundTransparency = 1
-    SearchIcon.Position = UDim2.new(1, -30, 0, 17)
-    SearchIcon.Size = UDim2.fromOffset(18, 18)
-    SearchIcon.Image = 'rbxassetid://10734943674'
-    SearchIcon.ImageColor3 = Color3.fromRGB(185, 185, 190)
-    SearchIcon.ImageTransparency = 0.1
-    SearchIcon.ScaleType = Enum.ScaleType.Fit
-    SearchIcon.Parent = Handler
-
-    local SearchBox = Instance.new('TextBox')
-    SearchBox.Name = 'SearchBox'
-    SearchBox.BackgroundTransparency = 0
-    SearchBox.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-    SearchBox.Position = UDim2.new(0, 8, 0, 12)
-    SearchBox.Size = UDim2.new(1, -50, 0, 28)
-    SearchBox.Font = Enum.Font.GothamSemibold
-    SearchBox.Text = ''
-    SearchBox.PlaceholderText = 'Search modules...'
-    SearchBox.TextColor3 = Color3.fromRGB(200, 200, 200)
-    SearchBox.PlaceholderColor3 = Color3.fromRGB(120, 120, 120)
-    SearchBox.TextSize = 14
-    SearchBox.TextXAlignment = Enum.TextXAlignment.Left
-    SearchBox.ClearTextOnFocus = false
-    SearchBox.Visible = false
-    SearchBox.Parent = Handler
-
-    local SearchBoxCorner = Instance.new('UICorner')
-    SearchBoxCorner.CornerRadius = UDim.new(0, 6)
-    SearchBoxCorner.Parent = SearchBox
-
-    local searchOpen = false
-    Connections['search_icon'] = SearchIcon.InputBegan:Connect(function(input: InputObject)
-        if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
-        searchOpen = not searchOpen
-        SearchBox.Visible = searchOpen
-        if searchOpen then
-            SearchBox:CaptureFocus()
-        end
-    end)
-
-    SearchBox:GetPropertyChangedSignal('Text'):Connect(function()
-        FilterSearch(SearchBox.Text)
-    end)
-
     local UIScale = Instance.new('UIScale')
     UIScale.Parent = Container    
     
@@ -1769,8 +1665,7 @@ function TabManager:moduleparagraph(settings: any)
     local LayoutOrderModule = 0;
 
     local ModuleManager = {
-        _size = 0,
-        _multiplier = 0
+        _size = 0
     }
 
     local section = (settings.section == 'right') and RightSection or LeftSection
@@ -1791,7 +1686,7 @@ function TabManager:moduleparagraph(settings: any)
     UIListLayout.Parent = Module
     
     local UICorner = Instance.new('UICorner')
-    UICorner.CornerRadius = UDim.new(0, 8)
+    UICorner.CornerRadius = UDim.new(0, 10)
     UICorner.Parent = Module
     
     local UIStroke = Instance.new('UIStroke')
@@ -1871,7 +1766,7 @@ function TabManager:create_image(settings: any)
     Module.Parent = section
 
     local UICorner = Instance.new('UICorner')
-    UICorner.CornerRadius = UDim.new(0, 8)
+    UICorner.CornerRadius = UDim.new(0, 10)
     UICorner.Parent = Module
     
     local UIStroke = Instance.new('UIStroke')
@@ -1901,8 +1796,7 @@ end
 
             local ModuleManager = {
                 _state = false,
-                _size = 0,
-                _multiplier = 0
+                _size = 0
             }
 
     local section = (settings.section == 'right') and RightSection or LeftSection
@@ -1918,15 +1812,12 @@ end
             Module.BackgroundColor3 = Theme.Panel
             Module.Parent = section
 
-            RegisterSearchItem(settings.title or settings.flag or "Module", "Module", Module, section)
-
-
             local UIListLayout = Instance.new('UIListLayout')
             UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
             UIListLayout.Parent = Module
             
             local UICorner = Instance.new('UICorner')
-            UICorner.CornerRadius = UDim.new(0, 8)
+            UICorner.CornerRadius = UDim.new(0, 10)
             UICorner.Parent = Module
             
             local UIStroke = Instance.new('UIStroke')
@@ -2160,12 +2051,10 @@ end
             function ModuleManager:refresh_size()
                 if Options and Options.Parent then
                     local contentHeight = self:_measure_content()
-                    if contentHeight > 8 then
-                        self._size = math.max(self._size, contentHeight)
-                        Options.Size = UDim2.fromOffset(218, self._size)
-                        if self._state then
-                            Module.Size = UDim2.fromOffset(218, 93 + self._size + self._multiplier)
-                        end
+                    self._size = math.max(contentHeight, 8)
+                    Options.Size = UDim2.fromOffset(218, self._size)
+                    if self._state then
+                        Module.Size = UDim2.fromOffset(218, 93 + self._size)
                     end
                 end
             end
@@ -2176,11 +2065,11 @@ end
                 if self._state then
                     self:refresh_size()
                     TweenService:Create(Module, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                        Size = UDim2.fromOffset(218, 93 + self._size + self._multiplier)
+                        Size = UDim2.fromOffset(218, 93 + self._size)
                     }):Play()
 
                     TweenService:Create(Module.Options, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                        Size = UDim2.fromOffset(218, self._size + self._multiplier)
+                        Size = UDim2.fromOffset(218, self._size)
                     }):Play()
 
                     TweenService:Create(Toggle, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
@@ -2555,7 +2444,7 @@ end
                 Textbox.LayoutOrder = LayoutOrderModule
             
                 local UICorner = Instance.new('UICorner')
-                UICorner.CornerRadius = UDim.new(0, 4)
+                UICorner.CornerRadius = UDim.new(0, 8)
                 UICorner.Parent = Textbox
             
                 function TextboxManager:update_text(text: string)
@@ -2809,7 +2698,7 @@ function ModuleManager:create_button(settings: any)
     Button.LayoutOrder = LayoutOrderModule
 
     local ButtonCorner = Instance.new("UICorner")
-    ButtonCorner.CornerRadius = UDim.new(0, 4)
+    ButtonCorner.CornerRadius = UDim.new(0, 8)
     ButtonCorner.Parent = Button
 
     Button.MouseEnter:Connect(function()
@@ -2981,7 +2870,7 @@ end
                 Drag.Parent = Slider
                 
                 local UICorner = Instance.new('UICorner')
-                UICorner.CornerRadius = UDim.new(1, 0)
+                UICorner.CornerRadius = UDim.new(0, 8)
                 UICorner.Parent = Drag
                 
                 local Fill = Instance.new('Frame')
@@ -2996,7 +2885,7 @@ end
                 Fill.Parent = Drag
                 
                 local UICorner = Instance.new('UICorner')
-                UICorner.CornerRadius = UDim.new(0, 3)
+                UICorner.CornerRadius = UDim.new(0, 8)
                 UICorner.Parent = Fill
                 
                 local UIGradient = Instance.new('UIGradient')
@@ -3207,7 +3096,7 @@ end
                 Box.Parent = TextLabel
                 
                 local UICorner = Instance.new('UICorner')
-                UICorner.CornerRadius = UDim.new(0, 4)
+                UICorner.CornerRadius = UDim.new(0, 8)
                 UICorner.Parent = Box
                 
                 local Header = Instance.new('Frame')
@@ -3416,24 +3305,25 @@ end
                     settings.callback(option)
                 end
                 
-                local CurrentDropSizeState = 0;
-
                 function DropdownManager:unfold_settings()
                     self._state = not self._state
 
+                    ModuleManager:refresh_size()
+
+                    local collapsedSize = ModuleManager._size
+                    if not self._state then
+                        collapsedSize = math.max(collapsedSize - self._size, 8)
+                    end
+
+                    local targetSize = self._state and (collapsedSize + self._size) or collapsedSize
+
                     if self._state then
-                        ModuleManager._multiplier += self._size
-
-                        CurrentDropSizeState = self._size;
-
-                        ModuleManager:refresh_size()
-
                         TweenService:Create(Module, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                            Size = UDim2.fromOffset(218, 93 + ModuleManager._size + ModuleManager._multiplier)
+                            Size = UDim2.fromOffset(218, 93 + targetSize)
                         }):Play()
 
                         TweenService:Create(Module.Options, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                            Size = UDim2.fromOffset(218, ModuleManager._size + ModuleManager._multiplier)
+                            Size = UDim2.fromOffset(218, targetSize)
                         }):Play()
 
                         TweenService:Create(Dropdown, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
@@ -3448,18 +3338,12 @@ end
                             Rotation = 180
                         }):Play()
                     else
-                        ModuleManager._multiplier -= self._size
-
-                        CurrentDropSizeState = 0;
-
-                        ModuleManager:refresh_size()
-
                         TweenService:Create(Module, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                            Size = UDim2.fromOffset(218, 93 + ModuleManager._size + ModuleManager._multiplier)
+                            Size = UDim2.fromOffset(218, 93 + targetSize)
                         }):Play()
 
                         TweenService:Create(Module.Options, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                            Size = UDim2.fromOffset(218, ModuleManager._size + ModuleManager._multiplier)
+                            Size = UDim2.fromOffset(218, targetSize)
                         }):Play()
 
                         TweenService:Create(Dropdown, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
@@ -3540,7 +3424,6 @@ end
                     Dropdown:Destroy();
                     ModuleManager._size -= 44
                     LayoutOrderModule = order - 1
-                    ModuleManager._multiplier -= CurrentDropSizeState
                     local result = ModuleManager:create_dropdown(value)
                     task.defer(function()
                         ModuleManager:refresh_size()
