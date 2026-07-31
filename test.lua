@@ -61,7 +61,7 @@ local TextService = cloneref(game:GetService('TextService'))
 local RunService = cloneref(game:GetService('RunService'))
 local Lighting = cloneref(game:GetService('Lighting'))
 local Players = cloneref(game:GetService('Players'))
-local CoreGui = cloneref(game:GetService('CoreGui'))
+local PlayerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
 local Debris = cloneref(game:GetService('Debris'))
 
 local Theme = {
@@ -107,7 +107,7 @@ local function UpdateThemeAccent()
 end
 
 local mouse = Players.LocalPlayer:GetMouse()
-local old_Frostware = CoreGui:FindFirstChild(UIName)
+local old_Frostware = PlayerGui:FindFirstChild(UIName)
 
 if old_Frostware then
     Debris:AddItem(old_Frostware, 0)
@@ -485,7 +485,7 @@ NotificationContainer.Size = UDim2.new(0, 300, 0, 0)
 NotificationContainer.Position = UDim2.new(0.8, 0, 0, 10)
 NotificationContainer.BackgroundTransparency = 1
 NotificationContainer.ClipsDescendants = false
-NotificationContainer.Parent = game:GetService("CoreGui").RobloxGui:FindFirstChild("RobloxCoreGuis") or Instance.new("ScreenGui", game:GetService("CoreGui").RobloxGui)
+NotificationContainer.Parent = PlayerGui:FindFirstChild("RobloxCoreGuis") or Instance.new("ScreenGui", PlayerGui)
 NotificationContainer.AutomaticSize = Enum.AutomaticSize.Y
 
 local UIListLayout = Instance.new("UIListLayout")
@@ -756,7 +756,7 @@ function Library:remove_table_value(__table: any, table_value: string)
 end
 
 function Library:create_ui()
-    local old_Frostware = CoreGui:FindFirstChild(UIName)
+    local old_Frostware = PlayerGui:FindFirstChild(UIName)
 
     if old_Frostware then
         Debris:AddItem(old_Frostware, 0)
@@ -766,7 +766,7 @@ function Library:create_ui()
     Frostware.ResetOnSpawn = false
     Frostware.Name = UIName
     Frostware.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    Frostware.Parent = CoreGui
+    Frostware.Parent = PlayerGui
     
     local Container = Instance.new('Frame')
     Container.ClipsDescendants = true
