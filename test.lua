@@ -136,7 +136,7 @@ local Connections = setmetatable({
             value:Disconnect()
         end
     end
-})
+}, { __mode = "k" })
 
 
 local Config = setmetatable({
@@ -220,7 +220,7 @@ local Config = setmetatable({
     
         return result
     end
-})
+}, { __mode = "k" })
 
 
 local Library = {
