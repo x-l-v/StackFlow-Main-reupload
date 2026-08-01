@@ -1803,7 +1803,8 @@ end
 
             local ModuleManager = {
                 _state = false,
-                _size = 0
+                _size = 0,
+                _dropdownRegistry = {}
             }
 
     local section = (settings.section == 'right') and RightSection or LeftSection
@@ -2055,10 +2056,11 @@ end
                 end)
                 for i, child in ipairs(children) do
                     local h
-                    if child._DropdownManager then
+                    local dm = self._dropdownRegistry and self._dropdownRegistry[child]
+                    if dm then
                         h = 39
-                        if child._DropdownManager._state then
-                            h = h + child._DropdownManager._size
+                        if dm._state then
+                            h = h + dm._size
                         end
                     else
                         h = child.AbsoluteSize.Y
@@ -3029,7 +3031,7 @@ end
                 Dropdown.BorderSizePixel = 0
                 Dropdown.TextSize = 14
                 Dropdown.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-                Dropdown._DropdownManager = DropdownManager
+                ModuleManager._dropdownRegistry[Dropdown] = DropdownManager
                 Dropdown.Parent = Options
 
                 if not settings.Order then
@@ -3375,6 +3377,7 @@ end
 
                 function DropdownManager:New(value)
                     local order = Dropdown.LayoutOrder
+                    ModuleManager._dropdownRegistry[Dropdown] = nil
                     Options:Destroy();
                     Dropdown:Destroy();
                     LayoutOrderModule = order - 1
