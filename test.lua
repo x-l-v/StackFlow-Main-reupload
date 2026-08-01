@@ -2013,6 +2013,7 @@ end
             local Options = Instance.new('Frame')
             Options.Name = 'Options'
             Options.BackgroundTransparency = 1
+            Options.ClipsDescendants = true
             Options.Position = UDim2.new(0, 0, 1, 0)
             Options.BorderColor3 = Color3.fromRGB(0, 0, 0)
             Options.Size = UDim2.new(0, 218, 0, 8)
@@ -2084,9 +2085,11 @@ end
                 if Options and Options.Parent then
                     local contentHeight = self:_measure_content()
                     self._size = math.max(contentHeight, 8)
-                    Options.Size = UDim2.fromOffset(218, self._size)
                     if self._state then
+                        Options.Size = UDim2.fromOffset(218, self._size)
                         Module.Size = UDim2.fromOffset(218, ModuleHeaderHeight() + self._size)
+                    else
+                        Options.Size = UDim2.fromOffset(218, 0)
                     end
                 end
             end
