@@ -1,3 +1,5 @@
+pcall(function() if task and task.synchronize then task.synchronize() end end)
+
 getgenv().GG = {
     Language = {
         CheckboxEnabled = "Enabled",
