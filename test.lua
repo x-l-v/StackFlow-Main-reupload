@@ -2021,13 +2021,25 @@ end
 
             local UIPadding = Instance.new('UIPadding')
             UIPadding.PaddingTop = UDim.new(0, 8)
+            UIPadding.PaddingBottom = UDim.new(0, 10)
             UIPadding.Parent = Options
 
             local UIListLayout = Instance.new('UIListLayout')
-            UIListLayout.Padding = UDim.new(0, 5)
+            UIListLayout.Padding = UDim.new(0, 6)
             UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
             UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
             UIListLayout.Parent = Options
+
+            local function ModuleHeaderHeight()
+                local h = Header and Header.AbsoluteSize.Y
+                if not h or h <= 0 then
+                    h = Header and Header.Size.Y.Offset
+                end
+                if not h or h <= 0 then
+                    h = 93
+                end
+                return h
+            end
 
             function ModuleManager:_measure_content()
                 local total = 0
@@ -2042,9 +2054,20 @@ end
                     return (a.LayoutOrder or 0) < (b.LayoutOrder or 0)
                 end)
                 for i, child in ipairs(children) do
-                    local h = child.Size.Y.Offset
-                    if h <= 0 then
+                    local h
+                    if child._DropdownManager then
+                        h = 39
+                        if child._DropdownManager._state then
+                            h = h + child._DropdownManager._size
+                        end
+                    else
                         h = child.AbsoluteSize.Y
+                        if h <= 0 then
+                            h = child.Size.Y.Offset
+                        end
+                        if h <= 0 then
+                            h = 20
+                        end
                     end
                     total = total + h
                     if i < #children then
@@ -2061,9 +2084,27 @@ end
                     self._size = math.max(contentHeight, 8)
                     Options.Size = UDim2.fromOffset(218, self._size)
                     if self._state then
-                        Module.Size = UDim2.fromOffset(218, 93 + self._size)
+                        Module.Size = UDim2.fromOffset(218, ModuleHeaderHeight() + self._size)
                     end
                 end
+            end
+
+            function ModuleManager:schedule_refresh()
+                if self._refresh_scheduled then
+                    return
+                end
+                self._refresh_scheduled = true
+                task.spawn(function()
+                    if RunService then
+                        RunService.RenderStepped:Wait()
+                    else
+                        task.wait()
+                    end
+                    self._refresh_scheduled = false
+                    if Options and Options.Parent then
+                        self:refresh_size()
+                    end
+                end)
             end
 
             function ModuleManager:change_state(state: boolean)
@@ -2072,7 +2113,7 @@ end
                 if self._state then
                     self:refresh_size()
                     TweenService:Create(Module, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                        Size = UDim2.fromOffset(218, 93 + self._size)
+                        Size = UDim2.fromOffset(218, ModuleHeaderHeight() + self._size)
                     }):Play()
 
                     TweenService:Create(Module.Options, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
@@ -2089,7 +2130,7 @@ end
                     }):Play()
                 else
                     TweenService:Create(Module, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                        Size = UDim2.fromOffset(218, 93)
+                        Size = UDim2.fromOffset(218, ModuleHeaderHeight())
                     }):Play()
 
                     TweenService:Create(Module.Options, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
@@ -2241,18 +2282,6 @@ end
                 LayoutOrderModule = LayoutOrderModule + 1;
 
                 local ParagraphManager = {}
-                
-                if self._size == 0 then
-                    self._size = 11
-                end
-            
-                self._size += settings.customScale or 70
-            
-                if ModuleManager._state then
-                    Module.Size = UDim2.fromOffset(218, 93 + self._size)
-                end
-            
-                Options.Size = UDim2.fromOffset(218, self._size)
             
                 -- Container Frame
                 local Paragraph = Instance.new('Frame')
@@ -2318,25 +2347,16 @@ end
                     }):Play()
                 end)
 
+                ModuleManager:refresh_size()
+                ModuleManager:schedule_refresh()
+
                 return ParagraphManager
             end
 
             function ModuleManager:create_text(settings: any)
                 LayoutOrderModule = LayoutOrderModule + 1
-            
+
                 local TextManager = {}
-            
-                if self._size == 0 then
-                    self._size = 11
-                end
-            
-                self._size += settings.customScale or 50 -- Adjust the default height for text elements
-            
-                if ModuleManager._state then
-                    Module.Size = UDim2.fromOffset(218, 93 + self._size)
-                end
-            
-                Options.Size = UDim2.fromOffset(218, self._size)
             
                 -- Container Frame
                 local TextFrame = Instance.new('Frame')
@@ -2395,28 +2415,21 @@ end
                         Body.RichText = true
                         Body.Text = new_settings.richtext or new_settings.text or "<font color='rgb(255,0,0)'>" .. UIName .. "</font> user" -- Default rich text
                     end
+                    ModuleManager:refresh_size()
+                    ModuleManager:schedule_refresh()
                 end;
             
+                ModuleManager:refresh_size()
+                ModuleManager:schedule_refresh()
+
                 return TextManager
             end
             function ModuleManager:create_textbox(settings: any)
                 LayoutOrderModule = LayoutOrderModule + 1
-            
+
                 local TextboxManager = {
                     _text = ""
                 }
-            
-                if self._size == 0 then
-                    self._size = 11
-                end
-            
-                self._size += 32
-            
-                if ModuleManager._state then
-                    Module.Size = UDim2.fromOffset(218, 93 + self._size)
-                end
-            
-                Options.Size = UDim2.fromOffset(218, self._size)
             
                 local Label = Instance.new('TextLabel')
                 Label.FontFace = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
@@ -2468,23 +2481,16 @@ end
                 Textbox.FocusLost:Connect(function()
                     TextboxManager:update_text(Textbox.Text)
                 end)
-            
+
+                ModuleManager:refresh_size()
+                ModuleManager:schedule_refresh()
+
                 return TextboxManager
             end   
 
             function ModuleManager:create_checkbox(settings: any)
                 LayoutOrderModule = LayoutOrderModule + 1
                 local CheckboxManager = { _state = false }
-            
-                if self._size == 0 then
-                    self._size = 11
-                end
-                self._size += 20
-            
-                if ModuleManager._state then
-                    Module.Size = UDim2.fromOffset(218, 93 + self._size)
-                end
-                Options.Size = UDim2.fromOffset(218, self._size)
             
                 local Checkbox = Instance.new("TextButton")
                 Checkbox.FontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
@@ -2671,23 +2677,16 @@ end
                     end
                 end)
                 Connections[settings.flag .. "_keypress"] = keyPressConnection
-            
+
+                ModuleManager:refresh_size()
+                ModuleManager:schedule_refresh()
+
                 return CheckboxManager
             end
 
 function ModuleManager:create_button(settings: any)
     LayoutOrderModule = LayoutOrderModule + 1
     
-    if self._size == 0 then
-        self._size = 11
-    end
-    self._size += 20
-
-    if ModuleManager._state then
-        Module.Size = UDim2.fromOffset(218, 93 + self._size)
-    end
-    Options.Size = UDim2.fromOffset(218, self._size)
-
     local Button = Instance.new("TextButton")
     Button.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
     Button.TextColor3 = Theme.Text
@@ -2726,6 +2725,9 @@ function ModuleManager:create_button(settings: any)
         end
     end)
 
+    ModuleManager:refresh_size()
+    ModuleManager:schedule_refresh()
+
     return Button
 end
         
@@ -2733,16 +2735,6 @@ end
             function ModuleManager:create_divider(settings: any)
                 -- Layout order management
                 LayoutOrderModule = LayoutOrderModule + 1;
-            
-                if self._size == 0 then
-                    self._size = 11
-                end
-            
-                self._size += 27
-            
-                if ModuleManager._state then
-                    Module.Size = UDim2.fromOffset(218, 93 + self._size)
-                end
 
                 local dividerHeight = 1
                 local dividerWidth = 188
@@ -2807,7 +2799,10 @@ end
                     UICorner.Parent = Divider
 
                 end;
-            
+
+                ModuleManager:refresh_size()
+                ModuleManager:schedule_refresh()
+
                 return true;
             end
             
@@ -2816,18 +2811,6 @@ end
                 LayoutOrderModule = LayoutOrderModule + 1
 
                 local SliderManager = {}
-
-                if self._size == 0 then
-                    self._size = 11
-                end
-
-                self._size += 27
-
-                if ModuleManager._state then
-                    Module.Size = UDim2.fromOffset(218, 93 + self._size)
-                end
-
-                Options.Size = UDim2.fromOffset(218, self._size)
 
                 local Slider = Instance.new('TextButton')
                 Slider.FontFace = Font.new('rbxasset://fonts/families/SourceSansPro.json', Enum.FontWeight.Regular, Enum.FontStyle.Normal);
@@ -3017,6 +3000,9 @@ end
                     SliderManager:input()
                 end)
 
+                ModuleManager:refresh_size()
+                ModuleManager:schedule_refresh()
+
                 return SliderManager
             end
 
@@ -3031,21 +3017,6 @@ end
                     _size = 0
                 }
 
-                if not settings.Order then
-                    if self._size == 0 then
-                        self._size = 11
-                    end
-
-                    self._size += 44
-                end;
-
-                if not settings.Order then
-                    if ModuleManager._state then
-                        Module.Size = UDim2.fromOffset(218, 93 + self._size)
-                    end
-                    Options.Size = UDim2.fromOffset(218, self._size)
-                end
-
                 local Dropdown = Instance.new('TextButton')
                 Dropdown.FontFace = Font.new('rbxasset://fonts/families/SourceSansPro.json', Enum.FontWeight.Regular, Enum.FontStyle.Normal)
                 Dropdown.TextColor3 = Color3.fromRGB(0, 0, 0)
@@ -3058,6 +3029,7 @@ end
                 Dropdown.BorderSizePixel = 0
                 Dropdown.TextSize = 14
                 Dropdown.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+                Dropdown._DropdownManager = DropdownManager
                 Dropdown.Parent = Options
 
                 if not settings.Order then
@@ -3317,54 +3289,30 @@ end
 
                     ModuleManager:refresh_size()
 
-                    local collapsedSize = ModuleManager._size
-                    if not self._state then
-                        collapsedSize = math.max(collapsedSize - self._size, 8)
-                    end
+                    local targetSize = ModuleManager._size
+                    local dropdownSize = self._state and self._size or 0
 
-                    local targetSize = self._state and (collapsedSize + self._size) or collapsedSize
+                    TweenService:Create(Module, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                        Size = UDim2.fromOffset(218, ModuleHeaderHeight() + targetSize)
+                    }):Play()
 
-                    if self._state then
-                        TweenService:Create(Module, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                            Size = UDim2.fromOffset(218, 93 + targetSize)
-                        }):Play()
+                    TweenService:Create(Module.Options, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                        Size = UDim2.fromOffset(218, targetSize)
+                    }):Play()
 
-                        TweenService:Create(Module.Options, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                            Size = UDim2.fromOffset(218, targetSize)
-                        }):Play()
+                    TweenService:Create(Dropdown, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                        Size = UDim2.fromOffset(188, 39 + dropdownSize)
+                    }):Play()
 
-                        TweenService:Create(Dropdown, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                            Size = UDim2.fromOffset(188, 39 + self._size)
-                        }):Play()
+                    TweenService:Create(Box, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                        Size = UDim2.fromOffset(188, 22 + dropdownSize)
+                    }):Play()
 
-                        TweenService:Create(Box, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                            Size = UDim2.fromOffset(188, 22 + self._size)
-                        }):Play()
+                    TweenService:Create(Arrow, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                        Rotation = self._state and 180 or 0
+                    }):Play()
 
-                        TweenService:Create(Arrow, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                            Rotation = 180
-                        }):Play()
-                    else
-                        TweenService:Create(Module, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                            Size = UDim2.fromOffset(218, 93 + targetSize)
-                        }):Play()
-
-                        TweenService:Create(Module.Options, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                            Size = UDim2.fromOffset(218, targetSize)
-                        }):Play()
-
-                        TweenService:Create(Dropdown, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                            Size = UDim2.fromOffset(188, 39)
-                        }):Play()
-
-                        TweenService:Create(Box, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                            Size = UDim2.fromOffset(188, 22)
-                        }):Play()
-
-                        TweenService:Create(Arrow, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                            Rotation = 0
-                        }):Play()
-                    end
+                    ModuleManager:schedule_refresh()
                 end
 
                 if #settings.options > 0 then
@@ -3429,7 +3377,6 @@ end
                     local order = Dropdown.LayoutOrder
                     Options:Destroy();
                     Dropdown:Destroy();
-                    ModuleManager._size -= 44
                     LayoutOrderModule = order - 1
                     local result = ModuleManager:create_dropdown(value)
                     task.defer(function()
@@ -3456,18 +3403,6 @@ end
                 local checked = false;
                 
                 LayoutOrderModule = LayoutOrderModule + 1
-            
-                if self._size == 0 then
-                    self._size = 11
-                end
-            
-                self._size += 20
-            
-                if ModuleManager._state then
-                    Module.Size = UDim2.fromOffset(218, 93 + self._size);
-                end
-            
-                Options.Size = UDim2.fromOffset(218, self._size);
             
                 local FeatureContainer = Instance.new("Frame")
                 FeatureContainer.Size = UDim2.new(0, 188, 0, 16)
@@ -3642,7 +3577,10 @@ end
                 if not settings.disablecheck then
                     settings.callback(checked);
                 end;
-            
+
+                ModuleManager:refresh_size()
+                ModuleManager:schedule_refresh()
+
                 return FeatureContainer
             end                    
 
