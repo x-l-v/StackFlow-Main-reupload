@@ -863,7 +863,7 @@ function Library:create_ui()
     Tabs.Name = 'Tabs'
     Tabs.Size = UDim2.new(0, 118, 0, 325)
     Tabs.Selectable = false
-    Tabs.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    Tabs.CanvasSize = UDim2.fromOffset(118, 0)
     Tabs.BackgroundTransparency = 1
     Tabs.Position = UDim2.new(0, 14, 0, 58)
     Tabs.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -1645,6 +1645,15 @@ self.set_background_image = self.SetBackgroundMedia
         UIPadding.Parent = RightSection
 
         self._tab += 1
+
+        local TabCount = 0
+        for _, object in Tabs:GetChildren() do
+            if object.Name == 'Tab' then
+                TabCount += 1
+            end
+        end
+        local ContentHeight = TabCount * 42 - 4
+        Tabs.CanvasSize = UDim2.fromOffset(118, math.min(math.max(ContentHeight, 0), 325))
 
         if first_tab then
             self:update_tabs(Tab, LeftSection, RightSection)
