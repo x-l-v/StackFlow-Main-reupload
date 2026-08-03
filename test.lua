@@ -490,6 +490,8 @@ NotificationContainer.ClipsDescendants = false
 NotificationContainer.Parent = PlayerGui:FindFirstChild("RobloxCoreGuis") or Instance.new("ScreenGui", PlayerGui)
 NotificationContainer.AutomaticSize = Enum.AutomaticSize.Y
 
+local _NotificationContainerAlive = true
+
 local UIListLayout = Instance.new("UIListLayout")
 UIListLayout.FillDirection = Enum.FillDirection.Vertical
 UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
@@ -526,6 +528,9 @@ local NOTIFICATION_ICONS = {
 }
 
 function Library.SendNotification(settings)
+    if not _NotificationContainerAlive or not NotificationContainer then
+        return
+    end
     settings = type(settings) == "table" and settings or {}
 
     local moduleName = settings.title or settings.module or "Notification"
@@ -694,9 +699,13 @@ function Library.SendNotification(settings)
 end
 
 function Library:DestroyNotifications()
+    if not _NotificationContainerAlive or not NotificationContainer then
+        return
+    end
     if NotificationContainer and NotificationContainer.Parent then
         NotificationContainer:Destroy()
     end
+    _NotificationContainerAlive = false
 end
 
 function Library:get_screen_scale()
@@ -1349,9 +1358,9 @@ self.set_background_image = self.SetBackgroundMedia
         local delta = input.Position - self._drag_start
         local position = UDim2.new(self._container_position.X.Scale, self._container_position.X.Offset + delta.X, self._container_position.Y.Scale, self._container_position.Y.Offset + delta.Y)
 
-        TweenService:Create(Container, TweenInfo.new(0.2), {
+        TweenGUISafe(Container, TweenInfo.new(0.2), {
             Position = position
-        }):Play()
+        })
     end
 
     local function drag(input: InputObject, process: boolean)
@@ -1370,6 +1379,10 @@ self.set_background_image = self.SetBackgroundMedia
     self:removed(function()
         self._ui = nil
         Connections:disconnect_all()
+        if _NotificationContainerAlive and NotificationContainer then
+            _NotificationContainerAlive = false
+            pcall(function() NotificationContainer:Destroy() end)
+        end
     end)
 
     function self:Update1Run(a)
@@ -1388,13 +1401,13 @@ self.set_background_image = self.SetBackgroundMedia
 
     function self:change_visiblity(state: boolean)
         if state then
-            TweenService:Create(Container, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+            TweenGUISafe(Container, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
                 Size = UDim2.fromOffset(620, 400)
-            }):Play()
+            })
         else
-            TweenService:Create(Container, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+            TweenGUISafe(Container, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
                 Size = UDim2.fromOffset(104.5, 52)
-            }):Play()
+            })
         end
     end
     
@@ -1423,9 +1436,9 @@ self.set_background_image = self.SetBackgroundMedia
             end)
         end
     
-        TweenService:Create(Container, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+        TweenGUISafe(Container, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
             Size = UDim2.fromOffset(620, 400)
-        }):Play()
+        })
 
 
         self._ui_loaded = true
@@ -2113,49 +2126,61 @@ end
             end
 
             function ModuleManager:change_state(state: boolean)
+                if self._changingState then
+                    return
+                end
+                self._changingState = true
+
                 self._state = state
 
                 if self._state then
                     self:refresh_size()
-                    TweenService:Create(Module, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                    TweenGUISafe(Module, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
                         Size = UDim2.fromOffset(218, ModuleHeaderHeight() + self._size)
-                    }):Play()
+                    })
 
-                    TweenService:Create(Module.Options, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                    TweenGUISafe(Module.Options, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
                         Size = UDim2.fromOffset(218, self._size)
-                    }):Play()
+                    })
 
-                    TweenService:Create(Toggle, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                    TweenGUISafe(Toggle, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
                         BackgroundColor3 = UIAccentColor
-                    }):Play()
+                    })
 
-                    TweenService:Create(Circle, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                    TweenGUISafe(Circle, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
                         BackgroundColor3 = UIAccentColor,
                         Position = UDim2.fromScale(0.53, 0.5)
-                    }):Play()
+                    })
                 else
-                    TweenService:Create(Module, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                    TweenGUISafe(Module, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
                         Size = UDim2.fromOffset(218, ModuleHeaderHeight())
-                    }):Play()
+                    })
 
-                    TweenService:Create(Module.Options, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                    TweenGUISafe(Module.Options, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
                         Size = UDim2.fromOffset(218, 0)
-                    }):Play()
+                    })
 
-                    TweenService:Create(Toggle, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                    TweenGUISafe(Toggle, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
                         BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-                    }):Play()
+                    })
 
-                    TweenService:Create(Circle, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                    TweenGUISafe(Circle, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
                         BackgroundColor3 = Theme.ToggleBg,
                         Position = UDim2.fromScale(0, 0.5)
-                    }):Play()
+                    })
                 end
 
                 Library._config._flags[settings.flag] = self._state
                 Config:save(game.GameId, Library._config)
 
-                settings.callback(self._state)
+                local cb = settings.callback
+                settings.callback = function() end
+                pcall(function()
+                    cb(self._state)
+                end)
+                settings.callback = cb
+
+                self._changingState = false
             end
             
             function ModuleManager:connect_keybind()
@@ -2601,25 +2626,38 @@ end
                 FillCorner.Parent = Fill
             
                 function CheckboxManager:change_state(state: boolean)
+                    if self._changingState then
+                        return
+                    end
+                    self._changingState = true
+
                     self._state = state
                     if self._state then
-                        TweenService:Create(Box, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                        TweenGUISafe(Box, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
                             BackgroundTransparency = 0.7
-                        }):Play()
-                        TweenService:Create(Fill, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                        })
+                        TweenGUISafe(Fill, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
                             Size = UDim2.fromOffset(9, 9)
-                        }):Play()
+                        })
                     else
-                        TweenService:Create(Box, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                        TweenGUISafe(Box, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
                             BackgroundTransparency = 0.9
-                        }):Play()
-                        TweenService:Create(Fill, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                        })
+                        TweenGUISafe(Fill, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
                             Size = UDim2.fromOffset(0, 0)
-                        }):Play()
+                        })
                     end
                     Library._config._flags[settings.flag] = self._state
                     Config:save(game.GameId, Library._config)
-                    settings.callback(self._state)
+
+                    local cb = settings.callback
+                    settings.callback = function() end
+                    pcall(function()
+                        cb(self._state)
+                    end)
+                    settings.callback = cb
+
+                    self._changingState = false
                 end
             
                 if Library:flag_type(settings.flag, "boolean") then
@@ -2951,10 +2989,10 @@ end
                     Library._config._flags[settings.flag] = number_threshold
                     Value.Text = number_threshold
     
-                    TweenService:Create(Fill, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                    TweenGUISafe(Fill, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
                         Size = UDim2.fromOffset(slider_size, Drag.Size.Y.Offset)
-                    }):Play()
-    
+                    })
+
                     settings.callback(number_threshold)
                 end
 
@@ -3297,25 +3335,25 @@ end
                     local targetSize = ModuleManager._size
                     local dropdownSize = self._state and self._size or 0
 
-                    TweenService:Create(Module, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                    TweenGUISafe(Module, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
                         Size = UDim2.fromOffset(218, ModuleHeaderHeight() + targetSize)
-                    }):Play()
+                    })
 
-                    TweenService:Create(Module.Options, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                    TweenGUISafe(Module.Options, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
                         Size = UDim2.fromOffset(218, targetSize)
-                    }):Play()
+                    })
 
-                    TweenService:Create(Dropdown, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                    TweenGUISafe(Dropdown, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
                         Size = UDim2.fromOffset(188, 39 + dropdownSize)
-                    }):Play()
+                    })
 
-                    TweenService:Create(Box, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                    TweenGUISafe(Box, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
                         Size = UDim2.fromOffset(188, 22 + dropdownSize)
-                    }):Play()
+                    })
 
-                    TweenService:Create(Arrow, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                    TweenGUISafe(Arrow, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
                         Rotation = self._state and 180 or 0
-                    }):Play()
+                    })
 
                     ModuleManager:schedule_refresh()
                 end
