@@ -423,6 +423,7 @@ local function PerformValidation()
         StartEntitlementCountdown()
     end
 end
+local Library = {
     _config = Config:load(game.GameId),
     _choosing_keybind = false,
     _device = nil,
