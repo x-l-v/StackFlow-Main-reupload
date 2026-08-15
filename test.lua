@@ -202,7 +202,8 @@ local Entitlement = {
     status = "No key",
     _revalidationInterval = 300,
     _lastValidation = 0,
-    _connections = {}
+    _connections = {},
+    _userStatus = nil
 }
 
 local function ReadHyperionKey()
@@ -348,18 +349,21 @@ local function ApplyEntitlementState(result)
 end
 
 local function UpdateUserStatusUI()
-    if UserStatus then
-        UserStatus.Text = Entitlement.status
-        if Entitlement.valid then
-            UserStatus.TextColor3 = Theme.Accent
-            UserStatus.TextTransparency = 0
-        elseif Entitlement.status == "No key" or Entitlement.status == "Checking..." then
-            UserStatus.TextColor3 = Theme.TextSecondary
-            UserStatus.TextTransparency = 0.3
-        else
-            UserStatus.TextColor3 = Color3.fromRGB(255, 70, 70)
-            UserStatus.TextTransparency = 0
-        end
+    local target = Entitlement._userStatus
+    if not target then
+        return
+    end
+
+    target.Text = Entitlement.status
+    if Entitlement.valid then
+        target.TextColor3 = Theme.Accent
+        target.TextTransparency = 0
+    elseif Entitlement.status == "No key" or Entitlement.status == "Checking..." then
+        target.TextColor3 = Theme.TextSecondary
+        target.TextTransparency = 0.3
+    else
+        target.TextColor3 = Color3.fromRGB(255, 70, 70)
+        target.TextTransparency = 0
     end
 end
 
@@ -391,20 +395,6 @@ local function StartEntitlementCountdown()
     end)
 end
 
-function PerformValidation()
-    Entitlement.status = "Checking..."
-    UpdateUserStatusUI()
-
-    local key = ReadHyperionKey()
-    local result = ValidateKeyWithJnkie(key)
-    ApplyEntitlementState(result)
-    UpdateUserStatusUI()
-
-    if Entitlement.valid and not Entitlement.lifetime then
-        StartEntitlementCountdown()
-    end
-end
-
 local function StartPeriodicRevalidation()
     if Entitlement._revalidationConnection then
         Entitlement._revalidationConnection:Disconnect()
@@ -420,10 +410,19 @@ local function StartPeriodicRevalidation()
     end)
 end
 
-PerformValidation()
-StartPeriodicRevalidation()
+local function PerformValidation()
+    Entitlement.status = "Checking..."
+    UpdateUserStatusUI()
 
-local Library = {
+    local key = ReadHyperionKey()
+    local result = ValidateKeyWithJnkie(key)
+    ApplyEntitlementState(result)
+    UpdateUserStatusUI()
+
+    if Entitlement.valid and not Entitlement.lifetime then
+        StartEntitlementCountdown()
+    end
+end
     _config = Config:load(game.GameId),
     _choosing_keybind = false,
     _device = nil,
@@ -1010,6 +1009,11 @@ function Library:create_ui()
         Size = UDim2.new(1, -50, 0, 12),
         Parent = UserSection
     })
+
+    -- Jnkie Entitlement Integration
+    Entitlement._userStatus = UserStatus
+    PerformValidation()
+    StartPeriodicRevalidation()
 
     -- Top Bar
     local TopBar = CreateInstance("Frame", {
