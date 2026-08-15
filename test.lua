@@ -623,9 +623,12 @@ end
 local function CreateInstance(className, properties)
     local instance = Instance.new(className)
     for k, v in pairs(properties) do
-        if k ~= "Parent" then
-            pcall(function() instance[k] = v end)
-        end
+        if k == "Parent" then continue end
+        pcall(function() instance[k] = v end)
+    end
+    local parent = properties.Parent
+    if parent then
+        pcall(function() instance.Parent = parent end)
     end
     return instance
 end
