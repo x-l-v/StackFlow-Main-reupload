@@ -1137,6 +1137,93 @@ function Library:create_ui()
 
     local ConfigOpen = false
     local ConfigMenu
+    local ConfigDropdown
+    local ConfigNameInput
+    local ConfigFeedback
+
+    local function GetConfigList()
+        local names = {}
+        local ok, files = pcall(function()
+            if type(listfiles) == "function" and type(isfolder) == "function" and isfolder(ConfigFolder) then
+                return listfiles(ConfigFolder)
+            end
+            return nil
+        end)
+        if ok and type(files) == "table" then
+            for _, path in ipairs(files) do
+                local name = path:match("([^/\\]+)%.json$")
+                if name then
+                    table.insert(names, name)
+                end
+            end
+        end
+        table.sort(names)
+        return names
+    end
+
+    local function RefreshConfigDropdown()
+        if not ConfigDropdown then
+            return
+        end
+        local list = GetConfigList()
+        for _, child in ConfigDropdown:GetChildren() do
+            if child.Name == "Option" then
+                child:Destroy()
+            end
+        end
+        for i, name in ipairs(list) do
+            local Option = CreateInstance("TextButton", {
+                Name = "Option",
+                Text = name,
+                TextColor3 = Theme.TextPrimary,
+                TextTransparency = 0.6,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                FontFace = Font.new(Theme.Font, Enum.FontWeight.SemiBold, Enum.FontStyle.Normal),
+                TextSize = 10,
+                AutoButtonColor = false,
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0,
+                Size = UDim2.new(1, 0, 0, 16),
+                Parent = ConfigDropdown
+            })
+            Option.MouseEnter:Connect(function()
+                TweenGUISafe(Option, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                    TextTransparency = 0.2,
+                    BackgroundColor3 = Theme.PanelHover
+                })
+            end)
+            Option.MouseLeave:Connect(function()
+                TweenGUISafe(Option, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                    TextTransparency = 0.6,
+                    BackgroundColor3 = Theme.Panel
+                })
+            end)
+            Option.MouseButton1Click:Connect(function()
+                ConfigDropdown.Visible = false
+                local Header = ConfigDropdown.Parent:FindFirstChild("Header")
+                if Header then
+                    local Label = Header:FindFirstChild("Label")
+                    if Label then
+                        Label.Text = name
+                    end
+                end
+            end)
+        end
+    end
+
+    local function ShowConfigFeedback(text, color)
+        if not ConfigFeedback then
+            return
+        end
+        ConfigFeedback.Text = text
+        ConfigFeedback.TextColor3 = color or Theme.Accent
+        ConfigFeedback.TextTransparency = 0
+        task.delay(1.5, function()
+            if ConfigFeedback then
+                ConfigFeedback.TextTransparency = 1
+            end
+        end)
+    end
 
     local function ToggleConfigMenu()
         ConfigOpen = not ConfigOpen
@@ -1147,99 +1234,218 @@ function Library:create_ui()
                     BackgroundColor3 = Theme.Panel,
                     BackgroundTransparency = 0.08,
                     BorderSizePixel = 0,
-                    Position = UDim2.new(0, 94, 0, 36),
-                    Size = UDim2.new(0, 110, 0, 0),
-                    Parent = SideBar,
+                    Position = UDim2.new(0, 420, 0, 52),
+                    Size = UDim2.new(0, 180, 0, 0),
+                    Parent = Container,
                     Visible = true
                 })
-                ApplyCorner(ConfigMenu, 6)
+                ApplyCorner(ConfigMenu, 8)
                 ApplyStroke(ConfigMenu, Theme.Border, 1, 0.3)
 
-                local ConfigList = CreateInstance("UIListLayout", {
-                    Padding = UDim.new(0, 2),
-                    SortOrder = Enum.SortOrder.LayoutOrder,
-                    Parent = ConfigMenu
-                })
-                local ConfigPad = CreateInstance("UIPadding", {
-                    PaddingTop = UDim.new(0, 4),
-                    PaddingBottom = UDim.new(0, 4),
-                    PaddingLeft = UDim.new(0, 4),
-                    PaddingRight = UDim.new(0, 4),
+                local Title = CreateInstance("TextLabel", {
+                    Name = "Title",
+                    Text = "Config",
+                    TextColor3 = Theme.Accent,
+                    TextTransparency = 0.2,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    FontFace = Font.new(Theme.Font, Enum.FontWeight.SemiBold, Enum.FontStyle.Normal),
+                    TextSize = 12,
+                    BackgroundTransparency = 1,
+                    BorderSizePixel = 0,
+                    Size = UDim2.new(1, -16, 0, 16),
+                    Position = UDim2.new(0, 8, 0, 8),
                     Parent = ConfigMenu
                 })
 
-                local function ConfigItem(text, callback)
-                    local Item = CreateInstance("TextButton", {
-                        Text = text,
-                        TextColor3 = Theme.TextPrimary,
-                        TextTransparency = 0.2,
-                        TextXAlignment = Enum.TextXAlignment.Left,
-                        FontFace = Font.new(Theme.Font, Enum.FontWeight.Regular, Enum.FontStyle.Normal),
-                        TextSize = 10,
-                        BackgroundColor3 = Theme.Panel,
-                        BackgroundTransparency = 0.15,
-                        BorderSizePixel = 0,
-                        Size = UDim2.new(1, 0, 0, 24),
-                        Parent = ConfigMenu
+                local DropdownHeader = CreateInstance("TextButton", {
+                    Name = "DropdownHeader",
+                    Text = "",
+                    AutoButtonColor = false,
+                    BackgroundColor3 = Theme.Panel,
+                    BackgroundTransparency = 0.15,
+                    BorderSizePixel = 0,
+                    Size = UDim2.new(1, -16, 0, 24),
+                    Position = UDim2.new(0, 8, 0, 30),
+                    Parent = ConfigMenu
+                })
+                ApplyCorner(DropdownHeader, 6)
+
+                local DropdownLabel = CreateInstance("TextLabel", {
+                    Name = "Label",
+                    Text = "Select config",
+                    TextColor3 = Theme.TextPrimary,
+                    TextTransparency = 0.2,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    FontFace = Font.new(Theme.Font, Enum.FontWeight.SemiBold, Enum.FontStyle.Normal),
+                    TextSize = 10,
+                    BackgroundTransparency = 1,
+                    BorderSizePixel = 0,
+                    Size = UDim2.new(1, -24, 1, 0),
+                    Position = UDim2.new(0, 6, 0, 0),
+                    Parent = DropdownHeader
+                })
+
+                local DropdownArrow = CreateInstance("ImageLabel", {
+                    Name = "Arrow",
+                    Image = 'rbxassetid://84232453189324',
+                    BackgroundTransparency = 1,
+                    BorderSizePixel = 0,
+                    Size = UDim2.new(0, 8, 0, 8),
+                    Position = UDim2.new(1, -16, 0.5, -4),
+                    AnchorPoint = Vector2.new(1, 0.5),
+                    Parent = DropdownHeader
+                })
+
+                ConfigDropdown = CreateInstance("ScrollingFrame", {
+                    Name = "Options",
+                    BackgroundTransparency = 1,
+                    BorderSizePixel = 0,
+                    ScrollBarThickness = 3,
+                    ScrollBarImageTransparency = 0.9,
+                    AutomaticCanvasSize = Enum.AutomaticSize.Y,
+                    Size = UDim2.new(1, -16, 0, 0),
+                    Position = UDim2.new(0, 8, 0, 58),
+                    Parent = ConfigMenu,
+                    Visible = false
+                })
+
+                local DropdownOpen = false
+                DropdownHeader.MouseButton1Click:Connect(function()
+                    DropdownOpen = not DropdownOpen
+                    ConfigDropdown.Visible = DropdownOpen
+                    if DropdownOpen then
+                        RefreshConfigDropdown()
+                    end
+                end)
+
+                ConfigNameInput = CreateInstance("TextBox", {
+                    Name = "ConfigName",
+                    Text = "",
+                    PlaceholderText = "Config name",
+                    TextColor3 = Theme.TextPrimary,
+                    FontFace = Font.new(Theme.Font, Enum.FontWeight.Regular, Enum.FontStyle.Normal),
+                    TextSize = 10,
+                    BackgroundColor3 = Theme.Accent,
+                    BackgroundTransparency = 0.9,
+                    BorderSizePixel = 0,
+                    Size = UDim2.new(1, -16, 0, 15),
+                    Position = UDim2.new(0, 8, 0, 84),
+                    Parent = ConfigMenu,
+                    ClearTextOnFocus = false
+                })
+                ApplyCorner(ConfigNameInput, 4)
+
+                local LoadButton = CreateInstance("TextButton", {
+                    Name = "LoadButton",
+                    Text = "Load",
+                    TextColor3 = Theme.TextPrimary,
+                    TextTransparency = 0.2,
+                    TextXAlignment = Enum.TextXAlignment.Center,
+                    FontFace = Font.new(Theme.Font, Enum.FontWeight.SemiBold, Enum.FontStyle.Normal),
+                    TextSize = 10,
+                    AutoButtonColor = false,
+                    BackgroundColor3 = Theme.Accent,
+                    BackgroundTransparency = 0.15,
+                    BorderSizePixel = 0,
+                    Size = UDim2.new(0.5, -10, 0, 18),
+                    Position = UDim2.new(0, 8, 0, 104),
+                    Parent = ConfigMenu
+                })
+                ApplyCorner(LoadButton, 5)
+
+                local SaveButton = CreateInstance("TextButton", {
+                    Name = "SaveButton",
+                    Text = "Save",
+                    TextColor3 = Theme.TextPrimary,
+                    TextTransparency = 0.2,
+                    TextXAlignment = Enum.TextXAlignment.Center,
+                    FontFace = Font.new(Theme.Font, Enum.FontWeight.SemiBold, Enum.FontStyle.Normal),
+                    TextSize = 10,
+                    AutoButtonColor = false,
+                    BackgroundColor3 = Theme.Accent,
+                    BackgroundTransparency = 0.15,
+                    BorderSizePixel = 0,
+                    Size = UDim2.new(0.5, -10, 0, 18),
+                    Position = UDim2.new(0.5, 2, 0, 104),
+                    Parent = ConfigMenu
+                })
+                ApplyCorner(SaveButton, 5)
+
+                ConfigFeedback = CreateInstance("TextLabel", {
+                    Name = "Feedback",
+                    Text = "",
+                    TextColor3 = Theme.Accent,
+                    TextTransparency = 1,
+                    TextXAlignment = Enum.TextXAlignment.Center,
+                    FontFace = Font.new(Theme.Font, Enum.FontWeight.Regular, Enum.FontStyle.Normal),
+                    TextSize = 9,
+                    BackgroundTransparency = 1,
+                    BorderSizePixel = 0,
+                    Size = UDim2.new(1, -16, 0, 12),
+                    Position = UDim2.new(0, 8, 0, 126),
+                    Parent = ConfigMenu
+                })
+
+                LoadButton.MouseEnter:Connect(function()
+                    TweenGUISafe(LoadButton, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                        BackgroundTransparency = 0.05
                     })
-                    ApplyCorner(Item, 4)
-                    Item.MouseEnter:Connect(function()
-                        TweenGUISafe(Item, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                            BackgroundTransparency = 0.05,
-                            TextTransparency = 0
-                        })
-                    end)
-                    Item.MouseLeave:Connect(function()
-                        TweenGUISafe(Item, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                            BackgroundTransparency = 0.15,
-                            TextTransparency = 0.2
-                        })
-                    end)
-                    Item.MouseButton1Click:Connect(function()
-                        callback()
-                        ConfigOpen = false
-                        if ConfigMenu then
-                            TweenGUISafe(ConfigMenu, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                                Size = UDim2.new(0, 110, 0, 0)
-                            })
-                            task.delay(0.2, function()
-                                if ConfigMenu then ConfigMenu.Visible = false end
-                            end)
-                        end
-                    end)
-                    return Item
-                end
+                end)
+                LoadButton.MouseLeave:Connect(function()
+                    TweenGUISafe(LoadButton, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                        BackgroundTransparency = 0.15
+                    })
+                end)
+                LoadButton.MouseButton1Click:Connect(function()
+                    local selected = DropdownLabel.Text
+                    if selected == "Select config" or selected == "" then
+                        ShowConfigFeedback("Select a config first", Color3.fromRGB(255, 70, 70))
+                        return
+                    end
+                    local loaded = Config:load(selected, Library._config)
+                    if loaded then
+                        Library._config = loaded
+                        ShowConfigFeedback("Config loaded", Theme.Accent)
+                    else
+                        ShowConfigFeedback("Load failed", Color3.fromRGB(255, 70, 70))
+                    end
+                end)
 
-                ConfigItem("Save Config", function()
-                    if Library._config then
-                        Config:save(game.GameId, Library._config)
-                        Library:SendNotification({ title = "Config", text = "Configuration saved.", type = "success", duration = 2 })
-                    end
+                SaveButton.MouseEnter:Connect(function()
+                    TweenGUISafe(SaveButton, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                        BackgroundTransparency = 0.05
+                    })
                 end)
-                ConfigItem("Load Config", function()
-                    if Library._config then
-                        Library._config = Config:load(game.GameId)
-                        Library:SendNotification({ title = "Config", text = "Configuration loaded.", type = "success", duration = 2 })
-                    end
+                SaveButton.MouseLeave:Connect(function()
+                    TweenGUISafe(SaveButton, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                        BackgroundTransparency = 0.15
+                    })
                 end)
-                ConfigItem("Reset Config", function()
-                    Library._config = { _flags = {}, _keybinds = {}, _library = {} }
-                    Config:save(game.GameId, Library._config)
-                    Library:SendNotification({ title = "Config", text = "Configuration reset.", type = "warning", duration = 2 })
+                SaveButton.MouseButton1Click:Connect(function()
+                    local name = ConfigNameInput and ConfigNameInput.Text or ""
+                    name = tostring(name):match("^%s*(.-)%s*$")
+                    if name == "" then
+                        ShowConfigFeedback("Enter a config name", Color3.fromRGB(255, 70, 70))
+                        return
+                    end
+                    Config:save(name, Library._config)
+                    ShowConfigFeedback("Config saved", Theme.Accent)
+                    RefreshConfigDropdown()
+                    DropdownLabel.Text = name
                 end)
 
                 ConfigMenu.Visible = false
-                ConfigMenu.Size = UDim2.new(0, 110, 0, 0)
+                ConfigMenu.Size = UDim2.new(0, 180, 0, 0)
             else
                 ConfigMenu.Visible = true
             end
             TweenGUISafe(ConfigMenu, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0, 110, 0, 80)
+                Size = UDim2.new(0, 180, 0, 140)
             })
         else
             if ConfigMenu then
                 TweenGUISafe(ConfigMenu, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                    Size = UDim2.new(0, 110, 0, 0)
+                    Size = UDim2.new(0, 180, 0, 0)
                 })
                 task.delay(0.2, function()
                     if ConfigMenu then ConfigMenu.Visible = false end
@@ -1364,6 +1570,7 @@ function Library:create_ui()
             Size = UDim2.fromOffset(620, 400)
         })
         self._ui_loaded = true
+        self:select_tab("Combat")
     end
 
     function self:removed(action)
@@ -1421,6 +1628,15 @@ function Library:create_ui()
         end
     end
 
+    function self:select_tab(title)
+        local entry = self._tab_registry[title]
+        if not entry then
+            return
+        end
+        self:update_tabs(entry.tab)
+        self:update_sections(entry.left, entry.right)
+    end
+
     function self:create_tab(title, icon)
         icon = ResolveAssetId(icon)
         local TabManager = {}
@@ -1432,7 +1648,6 @@ function Library:create_ui()
         font_params.Size = 12
         font_params.Width = 10000
         local font_size = TextService:GetTextBoundsAsync(font_params)
-        local first_tab = not TabsFrame:FindFirstChild('Tab')
 
         local Tab = CreateInstance("TextButton", {
             Name = "Tab",
@@ -1574,10 +1789,11 @@ function Library:create_ui()
             end
         end
 
-        if first_tab then
-            self:update_tabs(Tab)
-            self:update_sections(LeftSection, RightSection)
-        end
+        self._tab_registry[title] = {
+            tab = Tab,
+            left = LeftSection,
+            right = RightSection,
+        }
 
         Connections['tab_click_'..Tab.Name..'_'..Tab.LayoutOrder] = Tab.MouseButton1Click:Connect(function()
             self:update_tabs(Tab)
@@ -3114,6 +3330,7 @@ function Library.new(settings)
     local self = setmetatable({
         _loaded = false,
         _tab = 0,
+        _tab_registry = {},
     }, Library)
     self:create_ui()
     if customBackground ~= nil then
