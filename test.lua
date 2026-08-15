@@ -883,7 +883,7 @@ function Library:create_ui()
     Tabs.Parent = Handler
     
     local UIListLayout = Instance.new('UIListLayout')
-    UIListLayout.Padding = UDim.new(0, 4)
+    UIListLayout.Padding = UDim.new(0, 6)
     UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
     UIListLayout.Parent = Tabs
     
@@ -1606,7 +1606,7 @@ self.set_background_image = self.SetBackgroundMedia
         LeftSection.Parent = Sections
         
         local UIListLayout = Instance.new('UIListLayout')
-        UIListLayout.Padding = UDim.new(0, 11)
+        UIListLayout.Padding = UDim.new(0, 14)
         UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
         UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
         UIListLayout.Parent = LeftSection
@@ -1635,7 +1635,7 @@ self.set_background_image = self.SetBackgroundMedia
         RightSection.Parent = Sections
         
         local UIListLayout = Instance.new('UIListLayout')
-        UIListLayout.Padding = UDim.new(0, 11)
+        UIListLayout.Padding = UDim.new(0, 14)
         UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
         UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
         UIListLayout.Parent = RightSection
@@ -2028,7 +2028,7 @@ end
             UIPadding.Parent = Options
 
             local UIListLayout = Instance.new('UIListLayout')
-            UIListLayout.Padding = UDim.new(0, 6)
+            UIListLayout.Padding = UDim.new(0, 8)
             UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
             UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
             UIListLayout.Parent = Options
