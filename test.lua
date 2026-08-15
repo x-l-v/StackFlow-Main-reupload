@@ -98,6 +98,56 @@ local Theme = {
     ModuleHeight = 93,
 }
 
+local function AnimateGif(ImageLabel, Width, Height, Rows, Columns, NumberOfFrames, ImageID, FPS)
+    if ImageID then ImageLabel.Image = ImageID end
+    local RobloxMaxImageSize = 2048
+    local RealWidth, RealHeight
+
+    if math.max(Width, Height) > RobloxMaxImageSize then
+        local Longest = Width > Height and "Width" or "Height"
+        if Longest == "Width" then
+            RealWidth = RobloxMaxImageSize
+            RealHeight = (RealWidth / Width) * Height
+        elseif Longest == "Height" then
+            RealHeight = RobloxMaxImageSize
+            RealWidth = (RealHeight / Height) * Width
+        end
+    else
+        RealWidth, RealHeight = Width, Height
+    end
+
+    local FrameSize = Vector2.new(RealWidth / Columns, RealHeight / Rows)
+    ImageLabel.ImageRectSize = FrameSize
+
+    local CurrentRow, CurrentColumn = 0, 0
+    local Offsets = {}
+
+    for i = 1, NumberOfFrames do
+        local CurrentX = CurrentColumn * FrameSize.X
+        local CurrentY = CurrentRow * FrameSize.Y
+        table.insert(Offsets, Vector2.new(CurrentX, CurrentY))
+        CurrentColumn += 1
+
+        if CurrentColumn >= Columns then
+            CurrentColumn = 0
+            CurrentRow += 1
+        end
+    end
+
+    local TimeInterval = FPS and 1 / FPS or 0.1
+    local Index = 0
+
+    task.spawn(function()
+        while task.wait(TimeInterval) and ImageLabel:IsDescendantOf(game) do
+            Index += 1
+            ImageLabel.ImageRectOffset = Offsets[Index]
+            if Index >= NumberOfFrames then
+                Index = 0
+            end
+        end
+    end)
+end
+
 local function UpdateThemeAccent()
     Theme.Accent = UIAccentColor
     Theme.AccentBright = UIAccentColor:Lerp(Color3.fromRGB(255, 255, 255), 0.2)
@@ -925,12 +975,21 @@ function Library:create_ui()
     ApplyCorner(Container, 8)
     ApplyStroke(Container, Theme.Border, 1, 0.3)
 
+    local Handler = CreateInstance("Frame", {
+        Name = "Handler",
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        Position = UDim2.new(0, 0, 0, 0),
+        Size = UDim2.new(1, 0, 1, 0),
+        Parent = Container
+    })
+
     local UIContent = CreateInstance("Frame", {
         Name = "Content",
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 138, 0, 0),
-        Size = UDim2.new(1, -138, 1, 0),
-        Parent = Container
+        Position = UDim2.new(0, 138, 0, 53),
+        Size = UDim2.new(1, -138, 1, -53),
+        Parent = Handler
     })
 
     -- Sidebar
@@ -939,9 +998,9 @@ function Library:create_ui()
         BackgroundColor3 = Theme.Sidebar,
         BackgroundTransparency = 0,
         BorderSizePixel = 0,
-        Position = UDim2.new(0, 0, 0, 0),
-        Size = UDim2.new(0, 138, 1, 0),
-        Parent = Container
+        Position = UDim2.new(0, 0, 0, 53),
+        Size = UDim2.new(0, 138, 1, -53),
+        Parent = Handler
     })
 
     -- Sidebar separator line
@@ -1068,19 +1127,39 @@ function Library:create_ui()
     PerformValidation()
     StartPeriodicRevalidation()
 
-    -- Top Bar
-    local TopBar = CreateInstance("Frame", {
-        Name = "TopBar",
+    -- Top Header
+    local TopHeader = CreateInstance("Frame", {
+        Name = "TopHeader",
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
         Position = UDim2.new(0, 0, 0, 0),
-        Size = UDim2.new(1, 0, 0, 48),
-        Parent = UIContent
+        Size = UDim2.new(1, 0, 0, 52),
+        Parent = Handler
     })
 
-    local PageTitle = CreateInstance("TextLabel", {
-        Name = "PageTitle",
-        Text = "Main",
+    local Icon = CreateInstance("ImageLabel", {
+        Name = "Icon",
+        Image = IconAsset,
+        ImageColor3 = UIAccentColor,
+        ScaleType = Enum.ScaleType.Fit,
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        Size = UDim2.new(0, 24, 0, 24),
+        Position = UDim2.new(0, 14, 0.5, -12),
+        AnchorPoint = Vector2.new(0, 0.5),
+        Parent = TopHeader
+    })
+    if IconAnimated then
+        AnimateGif(Icon, IconSpriteWidth, IconSpriteHeight, IconSpriteRows, IconSpriteColumns, IconSpriteFrames, IconAsset, IconSpriteFPS)
+    end
+    Icon.MouseButton1Click:Connect(function()
+        self._ui_open = not self._ui_open
+        self:change_visiblity(self._ui_open)
+    end)
+
+    local ClientName = CreateInstance("TextLabel", {
+        Name = "ClientName",
+        Text = UIName,
         TextColor3 = Theme.TextPrimary,
         TextTransparency = 0,
         TextXAlignment = Enum.TextXAlignment.Left,
@@ -1088,24 +1167,42 @@ function Library:create_ui()
         TextSize = 13,
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
-        Position = UDim2.new(0, 16, 0, 14),
-        Size = UDim2.new(0.5, -100, 0, 20),
-        Parent = TopBar
+        Position = UDim2.new(0, 42, 0.5, -6),
+        AnchorPoint = Vector2.new(0, 0.5),
+        Size = UDim2.new(0, 160, 0, 13),
+        Parent = TopHeader
     })
 
-    local PageDescription = CreateInstance("TextLabel", {
-        Name = "PageDescription",
-        Text = "",
-        TextColor3 = Theme.TextSecondary,
-        TextTransparency = 0.3,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        FontFace = Font.new(Theme.Font, Enum.FontWeight.Regular, Enum.FontStyle.Normal),
-        TextSize = 10,
-        BackgroundTransparency = 1,
+    local Pin = CreateInstance("Frame", {
+        Name = "Pin",
+        BackgroundColor3 = UIAccentColor,
+        BackgroundTransparency = 0,
         BorderSizePixel = 0,
-        Position = UDim2.new(0, 16, 0, 32),
-        Size = UDim2.new(0.5, -100, 0, 12),
-        Parent = TopBar
+        Position = UDim2.new(0, 14, 0, 66),
+        Size = UDim2.new(0, 3, 0, 18),
+        Parent = Handler
+    })
+    ApplyCorner(Pin, 1)
+
+    -- Top Divider
+    local TopDivider = CreateInstance("Frame", {
+        Name = "TopDivider",
+        BackgroundColor3 = Theme.Border,
+        BackgroundTransparency = 0.35,
+        BorderSizePixel = 0,
+        Position = UDim2.new(0, 0, 0, 52),
+        Size = UDim2.new(1, 0, 0, 1),
+        Parent = Handler
+    })
+
+    local Divider = CreateInstance("Frame", {
+        Name = "Divider",
+        BackgroundColor3 = Theme.Border,
+        BackgroundTransparency = 0.3,
+        BorderSizePixel = 0,
+        Position = UDim2.new(0, 138, 0, 53),
+        Size = UDim2.new(0, 1, 1, -53),
+        Parent = Handler
     })
 
     -- Config Manager
@@ -1116,9 +1213,9 @@ function Library:create_ui()
         BackgroundColor3 = Theme.Panel,
         BackgroundTransparency = 0.15,
         BorderSizePixel = 0,
-        Position = UDim2.new(0, 94, 0, 8),
+        Position = UDim2.new(1, -50, 0.5, -12),
         Size = UDim2.new(0, 36, 0, 24),
-        Parent = SideBar
+        Parent = TopHeader
     })
     ApplyCorner(ConfigButton, 6)
     ApplyStroke(ConfigButton, Theme.Border, 1, 0.3)
@@ -1236,7 +1333,7 @@ function Library:create_ui()
                     BorderSizePixel = 0,
                     Position = UDim2.new(0, 420, 0, 52),
                     Size = UDim2.new(0, 180, 0, 0),
-                    Parent = Container,
+                    Parent = Handler,
                     Visible = true
                 })
                 ApplyCorner(ConfigMenu, 8)
@@ -1465,7 +1562,7 @@ function Library:create_ui()
         BorderSizePixel = 0,
         Position = UDim2.new(0, 8, 0, 8),
         Size = UDim2.new(0, 20, 0, 20),
-        Parent = TopBar
+        Parent = TopHeader
     })
     Minimize.MouseButton1Click:Connect(function()
         self._ui_open = not self._ui_open
@@ -1477,8 +1574,8 @@ function Library:create_ui()
         Name = "Sections",
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
-        Position = UDim2.new(0, 0, 0, 48),
-        Size = UDim2.new(1, 0, 1, -48),
+        Position = UDim2.new(0, 0, 0, 0),
+        Size = UDim2.new(1, 0, 1, 0),
         Parent = UIContent
     })
 
@@ -1900,6 +1997,7 @@ function Library:create_ui()
                 BackgroundColor3 = Theme.Panel,
                 BackgroundTransparency = 0.08,
                 BorderSizePixel = 0,
+                ClipsDescendants = true,
                 Size = UDim2.new(0, 218, 0, 93),
                 Parent = section
             })
@@ -3606,7 +3704,7 @@ Library.set_background_image = Library.SetBackgroundMedia
 -- UIName Breathing Animation
 local function AnimateUIName()
     if not Library._ui then return end
-    local ClientName = Library._ui.Container.Content.TopBar.PageTitle
+    local ClientName = Library._ui.Container.Handler.TopHeader.ClientName
     if not ClientName then return end
     local DeepRed = Color3.fromRGB(80, 8, 8)
     local BrightRed = Color3.fromRGB(255, 45, 45)
