@@ -689,108 +689,129 @@ function Library.SendNotification(settings)
     local duration = math.clamp(tonumber(settings.duration) or 5, 1.5, 30)
     local showIcon = iconAsset ~= nil
 
-    local Notification = CreateInstance("Frame", {
-        Name = "Notification",
-        Size = UDim2.new(1, 0, 0, 62),
-        BackgroundTransparency = 1,
-        BorderSizePixel = 0,
-        ClipsDescendants = true,
-        Parent = NotificationContainer,
-        AutomaticSize = Enum.AutomaticSize.Y
-    })
+    local Notification = Instance.new("Frame")
+    Notification.Name = "Notification"
+    Notification.Size = UDim2.new(1, 0, 0, 62)
+    Notification.BackgroundTransparency = 1
+    Notification.BorderSizePixel = 0
+    Notification.ClipsDescendants = true
+    Notification.Parent = NotificationContainer
+    Notification.AutomaticSize = Enum.AutomaticSize.Y
 
-    ApplyCorner(Notification, 8)
+    local UICorner = Instance.new("UICorner")
+    UICorner.CornerRadius = UDim.new(0, 10)
+    UICorner.Parent = Notification
 
-    local InnerFrame = CreateInstance("Frame", {
-        Name = "InnerFrame",
-        Size = UDim2.new(1, 0, 0, 62),
-        BackgroundColor3 = Theme.Panel,
-        BackgroundTransparency = 0.08,
-        BorderSizePixel = 0,
-        Parent = Notification,
-        AutomaticSize = Enum.AutomaticSize.Y
-    })
+    local InnerFrame = Instance.new("Frame")
+    InnerFrame.Name = "InnerFrame"
+    InnerFrame.Size = UDim2.new(1, 0, 0, 62)
+    InnerFrame.BackgroundColor3 = Theme.Panel
+    InnerFrame.BackgroundTransparency = 1
+    InnerFrame.BorderSizePixel = 0
+    InnerFrame.Parent = Notification
+    InnerFrame.AutomaticSize = Enum.AutomaticSize.Y
 
-    ApplyCorner(InnerFrame, 8)
-    ApplyStroke(InnerFrame, accent, 1, 0.4)
+    local InnerUICorner = Instance.new("UICorner")
+    InnerUICorner.CornerRadius = UDim.new(0, 10)
+    InnerUICorner.Parent = InnerFrame
 
-    local AccentBar = CreateInstance("Frame", {
-        Name = "AccentBar",
-        Size = UDim2.new(0, 3, 1, -12),
-        Position = UDim2.new(0, 0, 0, 6),
-        BackgroundColor3 = accent,
-        BackgroundTransparency = 0,
-        BorderSizePixel = 0,
-        Parent = InnerFrame
-    })
-    ApplyCorner(AccentBar, 2)
+    local InnerStroke = Instance.new("UIStroke")
+    InnerStroke.Color = accent
+    InnerStroke.Thickness = 1
+    InnerStroke.Transparency = 1
+    InnerStroke.Parent = InnerFrame
 
-    if showIcon then
-        local Icon = CreateInstance("ImageLabel", {
-            Name = "Icon",
-            Size = UDim2.fromOffset(20, 20),
-            Position = UDim2.fromOffset(12, 12),
-            BackgroundTransparency = 1,
-            Image = iconAsset,
-            ImageColor3 = accent,
-            ImageTransparency = 0,
-            ScaleType = Enum.ScaleType.Fit,
-            Parent = InnerFrame
-        })
-    end
+    local AccentBar = Instance.new("Frame")
+    AccentBar.Name = "AccentBar"
+    AccentBar.Size = UDim2.new(0, 3, 1, -12)
+    AccentBar.Position = UDim2.new(0, 0, 0, 6)
+    AccentBar.BackgroundColor3 = accent
+    AccentBar.BackgroundTransparency = 1
+    AccentBar.BorderSizePixel = 0
+    AccentBar.Parent = InnerFrame
 
+    local AccentBarCorner = Instance.new("UICorner")
+    AccentBarCorner.CornerRadius = UDim.new(0, 2)
+    AccentBarCorner.Parent = AccentBar
+
+    local Icon = Instance.new("ImageLabel")
+    Icon.Name = "Icon"
+    Icon.Size = UDim2.fromOffset(20, 20)
+    Icon.Position = UDim2.fromOffset(12, 12)
+    Icon.BackgroundTransparency = 1
+    Icon.Image = iconAsset or ""
+    Icon.ImageColor3 = accent
+    Icon.ImageTransparency = 1
+    Icon.ScaleType = Enum.ScaleType.Fit
+    Icon.Visible = showIcon
+    Icon.Parent = InnerFrame
+
+    local Title = Instance.new("TextLabel")
+    Title.Name = "Title"
+    Title.Text = tostring(moduleName)
+    Title.TextColor3 = Theme.TextPrimary
+    Title.TextStrokeTransparency = 0.6
+    Title.FontFace = Font.new(Theme.Font, Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
+    Title.TextSize = 13
     local textOffset = showIcon and 40 or 12
-    local Title = CreateInstance("TextLabel", {
-        Name = "Title",
-        Text = tostring(moduleName),
-        TextColor3 = Theme.TextPrimary,
-        TextStrokeTransparency = 0.6,
-        FontFace = Font.new(Theme.Font, Enum.FontWeight.SemiBold, Enum.FontStyle.Normal),
-        TextSize = 13,
-        Size = UDim2.new(1, -(textOffset + 8), 0, 20),
-        Position = UDim2.fromOffset(textOffset, 10),
-        BackgroundTransparency = 1,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        TextYAlignment = Enum.TextYAlignment.Center,
-        TextWrapped = true,
-        Parent = InnerFrame
-    })
+    Title.Size = UDim2.new(1, -(textOffset + 8), 0, 20)
+    Title.Position = UDim2.fromOffset(textOffset, 10)
+    Title.BackgroundTransparency = 1
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.TextYAlignment = Enum.TextYAlignment.Center
+    Title.TextWrapped = true
+    Title.TextTransparency = 1
+    Title.Parent = InnerFrame
 
-    local Body = CreateInstance("TextLabel", {
-        Name = "Body",
-        Text = tostring(statusText),
-        TextColor3 = Theme.TextSecondary,
-        TextStrokeTransparency = 0.7,
-        FontFace = Font.new(Theme.Font, Enum.FontWeight.Regular, Enum.FontStyle.Normal),
-        TextSize = 10,
-        Size = UDim2.new(1, -(textOffset + 8), 0, 18),
-        Position = UDim2.fromOffset(textOffset, 30),
-        BackgroundTransparency = 1,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        TextYAlignment = Enum.TextYAlignment.Top,
-        TextWrapped = true,
-        Parent = InnerFrame
-    })
+    local Body = Instance.new("TextLabel")
+    Body.Name = "Body"
+    Body.Text = tostring(statusText)
+    Body.TextColor3 = Theme.TextSecondary
+    Body.TextStrokeTransparency = 0.7
+    Body.FontFace = Font.new(Theme.Font, Enum.FontWeight.Regular, Enum.FontStyle.Normal)
+    Body.TextSize = 10
+    Body.Size = UDim2.new(1, -(textOffset + 8), 0, 18)
+    Body.Position = UDim2.fromOffset(textOffset, 30)
+    Body.BackgroundTransparency = 1
+    Body.TextXAlignment = Enum.TextXAlignment.Left
+    Body.TextYAlignment = Enum.TextYAlignment.Top
+    Body.TextWrapped = true
+    Body.TextTransparency = 1
+    Body.Parent = InnerFrame
 
-    local ProgressBar = CreateInstance("Frame", {
-        Name = "Bar",
-        AnchorPoint = Vector2.new(0, 1),
-        Position = UDim2.new(0, 0, 1, 0),
-        Size = UDim2.new(1, 0, 0, 3),
-        BackgroundColor3 = accent,
-        BorderSizePixel = 0,
-        Parent = InnerFrame
-    })
-    ApplyCorner(ProgressBar, 1)
+    local ProgressBar = Instance.new("Frame")
+    ProgressBar.Name = "Bar"
+    ProgressBar.AnchorPoint = Vector2.new(0, 1)
+    ProgressBar.Position = UDim2.new(0, 0, 1, 0)
+    ProgressBar.Size = UDim2.new(1, 0, 0, 3)
+    ProgressBar.BackgroundColor3 = accent
+    ProgressBar.BorderSizePixel = 0
+    ProgressBar.Parent = InnerFrame
+
+    local ProgressCorner = Instance.new("UICorner")
+    ProgressCorner.CornerRadius = UDim.new(1, 0)
+    ProgressCorner.Parent = ProgressBar
 
     local removed = false
+
     local function RemoveNotification()
-        if removed then return end
+        if removed then
+            return
+        end
         removed = true
+
         local slideOut = TweenGUISafe(InnerFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {
             Position = UDim2.new(-1.2, 0, 0, 0),
             BackgroundTransparency = 1
         })
+
+        TweenGUISafe(Icon, TweenInfo.new(0.3), { ImageTransparency = 1 })
+        TweenGUISafe(Title, TweenInfo.new(0.3), { TextTransparency = 1 })
+        TweenGUISafe(Body, TweenInfo.new(0.3), { TextTransparency = 1 })
+        TweenGUISafe(AccentBar, TweenInfo.new(0.3), { BackgroundTransparency = 1 })
+        TweenGUISafe(ProgressBar, TweenInfo.new(0.3), { BackgroundTransparency = 1 })
+        TweenGUISafe(InnerStroke, TweenInfo.new(0.3), { Transparency = 1 })
+
         task.delay(0.32, function()
             if Notification and Notification.Parent then
                 Notification:Destroy()
@@ -799,14 +820,23 @@ function Library.SendNotification(settings)
     end
 
     InnerFrame.Position = UDim2.new(1.2, 0, 0, 0)
+    InnerFrame.Scale = Vector2.new(0.95, 0.95)
     TweenGUISafe(InnerFrame, TweenInfo.new(0.35, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
         Position = UDim2.new(0, 0, 0, 0),
-        BackgroundTransparency = 0.08
+        BackgroundTransparency = 0.12,
+        Scale = Vector2.new(1, 1)
     })
+
+    TweenGUISafe(InnerStroke, TweenInfo.new(0.35), { Transparency = 0.25 })
+    TweenGUISafe(Icon, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { ImageTransparency = 0 })
+    TweenGUISafe(Title, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { TextTransparency = 0 })
+    TweenGUISafe(Body, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { TextTransparency = 0 })
+    TweenGUISafe(AccentBar, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 0 })
 
     local progTween = TweenGUISafe(ProgressBar, TweenInfo.new(duration, Enum.EasingStyle.Linear, Enum.EasingDirection.In), {
         Size = UDim2.new(0, 0, 0, 3)
     })
+
     if progTween then
         progTween.Completed:Connect(RemoveNotification)
     else
@@ -926,13 +956,10 @@ function Library:create_ui()
     })
 
     -- Tabs container
-    local TabsFrame = CreateInstance("ScrollingFrame", {
+    local TabsFrame = CreateInstance("Frame", {
         Name = "TabsFrame",
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
-        ScrollBarThickness = 3,
-        ScrollBarImageTransparency = 0.9,
-        ScrollingDirection = Enum.ScrollingDirection.Y,
         Position = UDim2.new(0, 0, 0, 0),
         Size = UDim2.new(1, 0, 1, -80),
         Parent = SideBar
@@ -972,17 +999,40 @@ function Library:create_ui()
         Parent = UserSection
     })
 
-    local Avatar = CreateInstance("Frame", {
+    local Avatar = CreateInstance("ImageLabel", {
         Name = "Avatar",
-        BackgroundColor3 = Theme.Accent,
-        BackgroundTransparency = 0.2,
+        BackgroundTransparency = 1,
         BorderSizePixel = 0,
         Position = UDim2.new(0, 8, 0, 10),
         Size = UDim2.new(0, 26, 0, 26),
         Parent = UserSection
     })
-    ApplyCorner(Avatar, 6)
+    ApplyCorner(Avatar, 13)
     ApplyStroke(Avatar, Theme.Accent, 1, 0.3)
+
+    task.spawn(function()
+        local success, image = pcall(function()
+            return Players:GetUserThumbnailAsync(
+                Players.LocalPlayer.UserId,
+                Enum.ThumbnailType.HeadShot,
+                Enum.ThumbnailSize.Size150x150
+            )
+        end)
+        if success and image then
+            Avatar.Image = image
+        end
+    end)
+
+    local UsernameContainer = CreateInstance("ScrollingFrame", {
+        Name = "UsernameContainer",
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ScrollBarThickness = 0,
+        ScrollingDirection = Enum.ScrollingDirection.X,
+        Position = UDim2.new(0, 42, 0, 12),
+        Size = UDim2.new(1, -50, 0, 14),
+        Parent = UserSection
+    })
 
     local Username = CreateInstance("TextLabel", {
         Name = "Username",
@@ -994,9 +1044,8 @@ function Library:create_ui()
         TextSize = 11,
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
-        Position = UDim2.new(0, 42, 0, 12),
-        Size = UDim2.new(1, -50, 0, 14),
-        Parent = UserSection
+        Size = UDim2.new(1, 0, 0, 14),
+        Parent = UsernameContainer
     })
 
     local UserStatus = CreateInstance("TextLabel", {
@@ -1067,9 +1116,9 @@ function Library:create_ui()
         BackgroundColor3 = Theme.Panel,
         BackgroundTransparency = 0.15,
         BorderSizePixel = 0,
-        Position = UDim2.new(1, -48, 0, 12),
+        Position = UDim2.new(0, 94, 0, 8),
         Size = UDim2.new(0, 36, 0, 24),
-        Parent = TopBar
+        Parent = SideBar
     })
     ApplyCorner(ConfigButton, 6)
     ApplyStroke(ConfigButton, Theme.Border, 1, 0.3)
@@ -1098,9 +1147,9 @@ function Library:create_ui()
                     BackgroundColor3 = Theme.Panel,
                     BackgroundTransparency = 0.08,
                     BorderSizePixel = 0,
-                    Position = UDim2.new(1, -120, 0, 42),
+                    Position = UDim2.new(0, 94, 0, 36),
                     Size = UDim2.new(0, 110, 0, 0),
-                    Parent = TopBar,
+                    Parent = SideBar,
                     Visible = true
                 })
                 ApplyCorner(ConfigMenu, 6)
