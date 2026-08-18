@@ -750,23 +750,24 @@ function Library:create_ui()
     UIGradient.Parent = ClientName
 
     task.spawn(function()
-        local deepCrimson = Color3.fromRGB(80, 8, 8)
-        local brightRed = Color3.fromRGB(255, 45, 45)
-        local breatheProxy = {Value = deepCrimson}
-        local breatheTween = TweenService:Create(breatheProxy, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {
-            Value = brightRed
-        })
-        breatheTween:Play()
+        local cycleRed = Color3.fromRGB(255, 45, 45)
+        local cycleWhite = Color3.fromRGB(245, 245, 245)
+        local cycleBlack = Color3.fromRGB(12, 12, 12)
+
+        UIGradient.Color = ColorSequence.new{
+            ColorSequenceKeypoint.new(0, cycleRed),
+            ColorSequenceKeypoint.new(0.333, cycleRed),
+            ColorSequenceKeypoint.new(0.333, cycleWhite),
+            ColorSequenceKeypoint.new(0.666, cycleWhite),
+            ColorSequenceKeypoint.new(0.666, cycleBlack),
+            ColorSequenceKeypoint.new(1, cycleBlack)
+        }
 
         while task.wait() do
             if not ClientName or not ClientName.Parent then break end
-            local c = breatheProxy.Value
-            UIGradient.Color = ColorSequence.new{
-                ColorSequenceKeypoint.new(0, c),
-                ColorSequenceKeypoint.new(0.5, c),
-                ColorSequenceKeypoint.new(1, c)
-            }
-            UIGradient.Offset = Vector2.new((os.clock() * 0.3) % 1, 0)
+            local width = math.max(ClientName.AbsoluteSize.X, 45)
+            local shift = (os.clock() * 60) % width
+            UIGradient.Offset = Vector2.new(shift, 0)
         end
     end)
 
@@ -3196,7 +3197,7 @@ end
 
                 local Options = Instance.new('ScrollingFrame')
                 Options.ScrollBarImageColor3 = Color3.fromRGB(0, 0, 0)
-                Options.Active = true
+                Options.Active = false
                 Options.ScrollBarImageTransparency = 1
                 Options.AutomaticCanvasSize = Enum.AutomaticSize.XY
                 Options.ScrollBarThickness = 0
@@ -3391,7 +3392,7 @@ end
                     for index, value in settings.options do
                         local Option = Instance.new('TextButton')
                         Option.FontFace = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
-                        Option.Active = false
+                        Option.Active = true
                         Option.TextTransparency = 0.6000000238418579
                         Option.AnchorPoint = Vector2.new(0, 0.5)
                         Option.TextSize = 10
