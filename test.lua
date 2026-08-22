@@ -506,6 +506,19 @@ local function saveConfig(file_name, config)
     end)
 end
 
+if type(Config) ~= 'table' then
+    Config = {
+        save = function(_, game_id, config)
+            if type(config) == 'table' then
+                saveConfig(game_id, config)
+            end
+        end,
+        load = function(_, game_id)
+            return loadConfig(game_id)
+        end
+    }
+end
+
 local Library = {
     _config = loadConfig(game.GameId),
 
