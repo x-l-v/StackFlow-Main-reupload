@@ -1,12 +1,12 @@
-if getgenv()._aurorasigma then
+if getgenv()._hyperion_active then
     pcall(function()
         if _G.hyperion_unload then _G.hyperion_unload() end
     end)
-    getgenv()._aurorasigma = nil
+    getgenv()._hyperion_active = nil
     task.wait(0.1)
 end
 
-getgenv()._aurorasigma = true
+getgenv()._hyperion_active = true
 
 local ContentProvider = game:GetService("ContentProvider")
 local LogService = game:GetService("LogService")
@@ -113,7 +113,7 @@ if not game:IsLoaded() then
     game.Loaded:Wait()
 end
 
-getgenv().GG = {
+getgenv().HyperionLang = {
     Language = {
         CheckboxEnabled = "Enabled",
         CheckboxDisabled = "Disabled",
@@ -133,7 +133,7 @@ getgenv().GG = {
     }
 }
 
-local SelectedLanguage = GG.Language
+local SelectedLanguage = HyperionLang.Language
 
 function convertStringToTable(inputString)
     local result = {}
@@ -159,6 +159,158 @@ local Lighting = cloneref(game:GetService('Lighting'))
 local Players = cloneref(game:GetService('Players'))
 local PlayerGui = cloneref(game:GetService('PlayerGui'))
 local Debris = cloneref(game:GetService('Debris'))
+
+-- ==== Hyperion notifications (MM2 style) ====
+do
+    local notifParent = PlayerGui
+    pcall(function()
+        if typeof(gethui) == 'function' then
+            local h = gethui()
+            if h then notifParent = h end
+        end
+    end)
+    local notifGui
+    pcall(function()
+        for _, existing in ipairs(notifParent:GetChildren()) do
+            if existing.Name == 'HyperionNotifications' then
+                existing:Destroy()
+            end
+        end
+    end)
+    notifGui = Instance.new('ScreenGui')
+    notifGui.Name = 'HyperionNotifications'
+    notifGui.ResetOnSpawn = false
+    notifGui.IgnoreGuiInset = true
+    notifGui.DisplayOrder = 1000
+    notifGui.Parent = notifParent or workspace
+    pcall(function()
+        if type(syn) == 'table' and syn.protect_gui then syn.protect_gui(notifGui) end
+    end)
+
+    local NotifList = Instance.new('Frame')
+    NotifList.AnchorPoint = Vector2.new(1, 1)
+    NotifList.Position = UDim2.new(1, -12, 1, -12)
+    NotifList.Size = UDim2.new(0, 320, 0, 0)
+    NotifList.AutomaticSize = Enum.AutomaticSize.Y
+    NotifList.BackgroundTransparency = 1
+    NotifList.Parent = notifGui
+
+    local NotifLayout = Instance.new('UIListLayout')
+    NotifLayout.Padding = UDim.new(0, 8)
+    NotifLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    NotifLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+    NotifLayout.Parent = NotifList
+
+    local NOTIF_COLORS = {
+        success = Color3.fromRGB(60, 220, 120),
+        error = Color3.fromRGB(255, 70, 70),
+        warning = Color3.fromRGB(255, 200, 70),
+        info = Color3.fromRGB(255, 45, 45)
+    }
+
+    local notifN = 0
+
+    function HyperionNotify(text, duration, opts)
+        if _G.HyperionBellEnabled == false then return nil end
+        if type(opts) == 'string' then opts = { type = opts } end
+        opts = type(opts) == 'table' and opts or {}
+        local accent = NOTIF_COLORS[opts.type] or NOTIF_COLORS.info
+        notifN += 1
+
+        local frame = Instance.new('Frame')
+        frame.Name = 'HyperionNotice'
+        frame.BackgroundColor3 = Color3.fromRGB(15, 3, 3)
+        frame.BackgroundTransparency = 1
+        frame.BorderSizePixel = 0
+        frame.Size = UDim2.new(1, 0, 0, 0)
+        frame.AutomaticSize = Enum.AutomaticSize.Y
+        frame.LayoutOrder = notifN
+        frame.Parent = NotifList
+
+        local corner = Instance.new('UICorner')
+        corner.CornerRadius = UDim.new(0, 8)
+        corner.Parent = frame
+
+        local stroke = Instance.new('UIStroke')
+        stroke.Color = accent
+        stroke.Thickness = 1.4
+        stroke.Transparency = 0.35
+        stroke.Parent = frame
+
+        local padding = Instance.new('UIPadding')
+        padding.PaddingTop = UDim.new(0, 8)
+        padding.PaddingBottom = UDim.new(0, 10)
+        padding.PaddingLeft = UDim.new(0, 12)
+        padding.PaddingRight = UDim.new(0, 12)
+        padding.Parent = frame
+
+        local titleLabel = Instance.new('TextLabel')
+        titleLabel.BackgroundTransparency = 1
+        titleLabel.TextTransparency = 1
+        titleLabel.Size = UDim2.new(1, 0, 0, 16)
+        titleLabel.Font = Enum.Font.GothamBold
+        titleLabel.TextSize = 13
+        titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+        titleLabel.TextColor3 = accent
+        titleLabel.Text = tostring(opts.title or 'Hyperion')
+        titleLabel.Parent = frame
+
+        local bodyLabel = Instance.new('TextLabel')
+        bodyLabel.BackgroundTransparency = 1
+        bodyLabel.TextTransparency = 1
+        bodyLabel.Size = UDim2.new(1, 0, 0, 16)
+        bodyLabel.Position = UDim2.fromOffset(0, 18)
+        bodyLabel.Font = Enum.Font.Gotham
+        bodyLabel.TextSize = 12
+        bodyLabel.TextXAlignment = Enum.TextXAlignment.Left
+        bodyLabel.TextYAlignment = Enum.TextYAlignment.Top
+        bodyLabel.TextWrapped = true
+        bodyLabel.AutomaticSize = Enum.AutomaticSize.Y
+        bodyLabel.TextColor3 = Color3.fromRGB(235, 225, 225)
+        bodyLabel.Text = tostring(text or '')
+        bodyLabel.Parent = frame
+
+        pcall(function()
+            TweenService:Create(frame, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), { BackgroundTransparency = 0.06 }):Play()
+            TweenService:Create(titleLabel, TweenInfo.new(0.25), { TextTransparency = 0 }):Play()
+            TweenService:Create(bodyLabel, TweenInfo.new(0.25), { TextTransparency = 0 }):Play()
+        end)
+
+        local dismissed = false
+        local function dismiss()
+            if dismissed then return end
+            dismissed = true
+            pcall(function()
+                TweenService:Create(frame, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { BackgroundTransparency = 1 }):Play()
+                TweenService:Create(titleLabel, TweenInfo.new(0.18), { TextTransparency = 1 }):Play()
+                TweenService:Create(bodyLabel, TweenInfo.new(0.18), { TextTransparency = 1 }):Play()
+            end)
+            task.delay(0.28, function()
+                pcall(function() frame:Destroy() end)
+            end)
+        end
+
+        local handle = {}
+        function handle:ChangeDescription(t)
+            pcall(function() bodyLabel.Text = tostring(t or '') end)
+        end
+        handle.Destroy = dismiss
+
+        frame.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dismiss()
+            end
+        end)
+
+        if type(duration) == 'number' and duration > 0 then
+            task.delay(duration, dismiss)
+        end
+        return handle
+    end
+
+    _G.ShowNotification = HyperionNotify
+    getgenv().HyperionShowNotification = HyperionNotify
+end
 
 local mouse = Players.LocalPlayer:GetMouse()
 local old_hyperion = PlayerGui and PlayerGui:FindFirstChild('hyperion')
@@ -511,7 +663,10 @@ end
 
 function Library:RunJunkieKeyValidation()
     local key = nil
-    local keyPath = "SakuraUI/Hyperionkey.txt"
+    local keyPath = "Hyperion/Hyperionkey.txt"
+    if not (type(isfile) == "function" and isfile(keyPath)) then
+        keyPath = "SakuraUI/Hyperionkey.txt"
+    end
     if type(isfile) == "function" and isfile(keyPath) then
         local ok, raw = pcall(readfile, keyPath)
         if ok and type(raw) == "string" then
@@ -684,7 +839,10 @@ function Library:create_ui()
 
     local function RunJunkieKeyValidation()
         local key = nil
-        local keyPath = "SakuraUI/Hyperionkey.txt"
+        local keyPath = "Hyperion/Hyperionkey.txt"
+    if not (type(isfile) == "function" and isfile(keyPath)) then
+        keyPath = "SakuraUI/Hyperionkey.txt"
+    end
         if type(isfile) == "function" and isfile(keyPath) then
             local ok, raw = pcall(readfile, keyPath)
             if ok and type(raw) == "string" then
@@ -2648,7 +2806,7 @@ end
                 Slider.LayoutOrder = LayoutOrderModule
 
                 local TextLabel = Instance.new('TextLabel')
-                if GG.SelectedLanguage == "th" then
+                if HyperionLang.SelectedLanguage == "th" then
                     TextLabel.FontFace = Font.new("rbxasset://fonts/families/NotoSansThai.json", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
                     TextLabel.TextSize = 13;
                 else
@@ -3025,7 +3183,7 @@ end
                 end;
 
                 local TextLabel = Instance.new('TextLabel')
-                if GG.SelectedLanguage == "th" then
+                if HyperionLang.SelectedLanguage == "th" then
                     TextLabel.FontFace = Font.new("rbxasset://fonts/families/NotoSansThai.json", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
                     TextLabel.TextSize = 13;
                 else
@@ -3609,5 +3767,5 @@ end
     return self
 end
 
-getgenv().AilonLibrary = Library
+getgenv().HyperionLibrary = Library
 return Library
