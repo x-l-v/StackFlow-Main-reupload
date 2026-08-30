@@ -426,7 +426,6 @@ do
 		return _currentLocation
 	end
 
-	Library.NotifySystem = NOTIF
 end
 
 local mouse = Players.LocalPlayer:GetMouse()
@@ -702,6 +701,8 @@ local Library = {
     _container_position = nil
 }
 Library.__index = Library
+
+Library.NotifySystem = NOTIF
 
 function Library.new()
     local self = setmetatable({
