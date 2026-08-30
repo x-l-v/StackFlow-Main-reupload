@@ -160,156 +160,273 @@ local Players = cloneref(game:GetService('Players'))
 local PlayerGui = cloneref(game:GetService('PlayerGui'))
 local Debris = cloneref(game:GetService('Debris'))
 
--- ==== Hyperion notifications (MM2 style) ====
+-- Liquid-glass notification system
 do
-    local notifParent = PlayerGui
-    pcall(function()
-        if typeof(gethui) == 'function' then
-            local h = gethui()
-            if h then notifParent = h end
-        end
-    end)
-    local notifGui
-    pcall(function()
-        for _, existing in ipairs(notifParent:GetChildren()) do
-            if existing.Name == 'HyperionNotifications' then
-                existing:Destroy()
-            end
-        end
-    end)
-    notifGui = Instance.new('ScreenGui')
-    notifGui.Name = 'HyperionNotifications'
-    notifGui.ResetOnSpawn = false
-    notifGui.IgnoreGuiInset = true
-    notifGui.DisplayOrder = 1000
-    notifGui.Parent = notifParent or workspace
-    pcall(function()
-        if type(syn) == 'table' and syn.protect_gui then syn.protect_gui(notifGui) end
-    end)
+	local TweenService = game:GetService("TweenService")
+	local RunService   = game:GetService("RunService")
 
-    local NotifList = Instance.new('Frame')
-    NotifList.AnchorPoint = Vector2.new(1, 1)
-    NotifList.Position = UDim2.new(1, -12, 1, -12)
-    NotifList.Size = UDim2.new(0, 320, 0, 0)
-    NotifList.AutomaticSize = Enum.AutomaticSize.Y
-    NotifList.BackgroundTransparency = 1
-    NotifList.Parent = notifGui
+	local NOTIF = {}
+	local _currentLocation = "BottomRight"
+	local _stack   = nil
+	local _gui     = nil
+	local _cards   = {}
 
-    local NotifLayout = Instance.new('UIListLayout')
-    NotifLayout.Padding = UDim.new(0, 8)
-    NotifLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    NotifLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
-    NotifLayout.Parent = NotifList
+	local CARD_W      = 250
+	local CARD_GAP    = 8
+	local PAD         = 13
+	local CORNER      = 14
+	local DEFAULT_DUR = 3
 
-    local NOTIF_COLORS = {
-        success = Color3.fromRGB(60, 220, 120),
-        error = Color3.fromRGB(255, 70, 70),
-        warning = Color3.fromRGB(255, 200, 70),
-        info = Color3.fromRGB(255, 45, 45)
-    }
+	local GLASS_BG      = Color3.fromRGB(16, 16, 20)
+	local GLASS_BG_T    = 0.30
+	local STROKE_COLOR  = Color3.fromRGB(255, 255, 255)
+	local STROKE_T      = 0.90
+	local SHADOW_COLOR  = Color3.fromRGB(0, 0, 0)
+	local SHADOW_T      = 0.60
 
-    local notifN = 0
+	local HEADER_COLOR  = Color3.fromRGB(130, 130, 145)
+	local TITLE_COLOR   = Color3.fromRGB(245, 245, 250)
+	local ON_COLOR      = Color3.fromRGB(120, 235, 160)
+	local OFF_COLOR     = Color3.fromRGB(255, 120, 130)
 
-    function HyperionNotify(text, duration, opts)
-        if _G.HyperionBellEnabled == false then return nil end
-        if type(opts) == 'string' then opts = { type = opts } end
-        opts = type(opts) == 'table' and opts or {}
-        local accent = NOTIF_COLORS[opts.type] or NOTIF_COLORS.info
-        notifN += 1
+	local POS = {
+		TopLeft      = { anchor = Vector2.new(0, 0), offset = Vector2.new( 16,  16), grow = Vector2.new(0, 1) },
+		TopMiddle    = { anchor = Vector2.new(0.5, 0), offset = Vector2.new( 0,   16), grow = Vector2.new(0, 1) },
+		TopRight     = { anchor = Vector2.new(1, 0), offset = Vector2.new(-16,  16), grow = Vector2.new(0, 1) },
+		MiddleLeft   = { anchor = Vector2.new(0, 0.5), offset = Vector2.new( 16,  0), grow = Vector2.new(0, 1) },
+		MiddleMiddle = { anchor = Vector2.new(0.5, 0.5), offset = Vector2.new( 0,   0), grow = Vector2.new(0, 1) },
+		MiddleRight  = { anchor = Vector2.new(1, 0.5), offset = Vector2.new(-16,  0), grow = Vector2.new(0, 1) },
+		BottomLeft   = { anchor = Vector2.new(0, 1), offset = Vector2.new( 16, -16), grow = Vector2.new(0, -1) },
+		BottomMiddle = { anchor = Vector2.new(0.5, 1), offset = Vector2.new( 0,  -16), grow = Vector2.new(0, -1) },
+		BottomRight  = { anchor = Vector2.new(1, 1), offset = Vector2.new(-16, -16), grow = Vector2.new(0, -1) },
+	}
 
-        local frame = Instance.new('Frame')
-        frame.Name = 'HyperionNotice'
-        frame.BackgroundColor3 = Color3.fromRGB(15, 3, 3)
-        frame.BackgroundTransparency = 1
-        frame.BorderSizePixel = 0
-        frame.Size = UDim2.new(1, 0, 0, 0)
-        frame.AutomaticSize = Enum.AutomaticSize.Y
-        frame.LayoutOrder = notifN
-        frame.Parent = NotifList
+	local function currentPos()
+		return POS[_currentLocation] or POS.BottomRight
+	end
 
-        local corner = Instance.new('UICorner')
-        corner.CornerRadius = UDim.new(0, 8)
-        corner.Parent = frame
+	local function repositionStack()
+		if not _stack then return end
+		local p = currentPos()
+		_stack.AnchorPoint = p.anchor
+		_stack.Position = UDim2.new(p.anchor.X, p.offset.X, p.anchor.Y, p.offset.Y)
+	end
 
-        local stroke = Instance.new('UIStroke')
-        stroke.Color = accent
-        stroke.Thickness = 1.4
-        stroke.Transparency = 0.35
-        stroke.Parent = frame
+	local function getGui()
+		if _gui and _gui.Parent then return _gui end
+		local pg = Players.LocalPlayer:FindFirstChild("PlayerGui")
+		if pg then
+			for _, c in ipairs(pg:GetChildren()) do
+				if c:IsA("ScreenGui") and c.Name == "HyperionGlassNotifs" then
+					c:Destroy()
+				end
+			end
+		end
+		local g = Instance.new("ScreenGui")
+		g.Name = "HyperionGlassNotifs"
+		g.ResetOnSpawn = false
+		g.IgnoreGuiInset = true
+		g.DisplayOrder = 1000
+		g.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
+		_gui = g
+		return g
+	end
 
-        local padding = Instance.new('UIPadding')
-        padding.PaddingTop = UDim.new(0, 8)
-        padding.PaddingBottom = UDim.new(0, 10)
-        padding.PaddingLeft = UDim.new(0, 12)
-        padding.PaddingRight = UDim.new(0, 12)
-        padding.Parent = frame
+	local function getStack()
+		if _stack and _stack.Parent then
+			repositionStack()
+			return _stack
+		end
+		local g = getGui()
+		for _, c in ipairs(g:GetChildren()) do
+			if c:IsA("Frame") and c.Name == "GlassStack" then
+				c:Destroy()
+			end
+		end
+		local s = Instance.new("Frame")
+		s.Name = "GlassStack"
+		s.BackgroundTransparency = 1
+		s.Size = UDim2.new(0, CARD_W, 0, 0)
+		s.AutomaticSize = Enum.AutomaticSize.Y
+		local layout = Instance.new("UIListLayout")
+		layout.Padding = UDim.new(0, CARD_GAP)
+		layout.SortOrder = Enum.SortOrder.LayoutOrder
+		layout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+		layout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+		layout.Parent = s
+		s.Parent = g
+		_stack = s
+		repositionStack()
+		return s
+	end
 
-        local titleLabel = Instance.new('TextLabel')
-        titleLabel.BackgroundTransparency = 1
-        titleLabel.TextTransparency = 1
-        titleLabel.Size = UDim2.new(1, 0, 0, 16)
-        titleLabel.Font = Enum.Font.GothamBold
-        titleLabel.TextSize = 13
-        titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-        titleLabel.TextColor3 = accent
-        titleLabel.Text = tostring(opts.title or 'Hyperion')
-        titleLabel.Parent = frame
+	local function makeCard(title, state)
+		local on = state:lower() == "enabled"
 
-        local bodyLabel = Instance.new('TextLabel')
-        bodyLabel.BackgroundTransparency = 1
-        bodyLabel.TextTransparency = 1
-        bodyLabel.Size = UDim2.new(1, 0, 0, 16)
-        bodyLabel.Position = UDim2.fromOffset(0, 18)
-        bodyLabel.Font = Enum.Font.Gotham
-        bodyLabel.TextSize = 12
-        bodyLabel.TextXAlignment = Enum.TextXAlignment.Left
-        bodyLabel.TextYAlignment = Enum.TextYAlignment.Top
-        bodyLabel.TextWrapped = true
-        bodyLabel.AutomaticSize = Enum.AutomaticSize.Y
-        bodyLabel.TextColor3 = Color3.fromRGB(235, 225, 225)
-        bodyLabel.Text = tostring(text or '')
-        bodyLabel.Parent = frame
+		local card = Instance.new("Frame")
+		card.Name = "GlassCard"
+		card.Size = UDim2.new(0, CARD_W, 0, 0)
+		card.AutomaticSize = Enum.AutomaticSize.Y
+		card.BackgroundColor3 = GLASS_BG
+		card.BackgroundTransparency = GLASS_BG_T
+		card.BorderSizePixel = 0
+		card.ClipsDescendants = true
 
-        pcall(function()
-            TweenService:Create(frame, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), { BackgroundTransparency = 0.06 }):Play()
-            TweenService:Create(titleLabel, TweenInfo.new(0.25), { TextTransparency = 0 }):Play()
-            TweenService:Create(bodyLabel, TweenInfo.new(0.25), { TextTransparency = 0 }):Play()
-        end)
+		Instance.new("UICorner", card).CornerRadius = UDim.new(0, CORNER)
 
-        local dismissed = false
-        local function dismiss()
-            if dismissed then return end
-            dismissed = true
-            pcall(function()
-                TweenService:Create(frame, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { BackgroundTransparency = 1 }):Play()
-                TweenService:Create(titleLabel, TweenInfo.new(0.18), { TextTransparency = 1 }):Play()
-                TweenService:Create(bodyLabel, TweenInfo.new(0.18), { TextTransparency = 1 }):Play()
-            end)
-            task.delay(0.28, function()
-                pcall(function() frame:Destroy() end)
-            end)
-        end
+		local stroke = Instance.new("UIStroke")
+		stroke.Color = STROKE_COLOR
+		stroke.Transparency = STROKE_T
+		stroke.Thickness = 0.6
+		stroke.Parent = card
 
-        local handle = {}
-        function handle:ChangeDescription(t)
-            pcall(function() bodyLabel.Text = tostring(t or '') end)
-        end
-        handle.Destroy = dismiss
+		local shadow = Instance.new("ImageLabel")
+		shadow.Name = "Shadow"
+		shadow.BackgroundTransparency = 1
+		shadow.Image = "rbxassetid://108345054277540"
+		shadow.ImageColor3 = SHADOW_COLOR
+		shadow.ImageTransparency = SHADOW_T
+		shadow.ScaleType = Enum.ScaleType.Slice
+		shadow.SliceCenter = Rect.new(50, 50, 50, 50)
+		shadow.Size = UDim2.new(1, 40, 1, 40)
+		shadow.Position = UDim2.new(0.5, 0, 0.5, 0)
+		shadow.AnchorPoint = Vector2.new(0.5, 0.5)
+		shadow.ZIndex = -1
+		shadow.Parent = card
 
-        frame.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-                dismiss()
-            end
-        end)
+		local header = Instance.new("TextLabel")
+		header.Name = "Header"
+		header.BackgroundTransparency = 1
+		header.Position = UDim2.new(0, PAD, 0, PAD - 1)
+		header.Size = UDim2.new(1, -PAD * 2, 0, 12)
+		header.Font = Enum.Font.GothamMedium
+		header.TextSize = 10
+		header.TextColor3 = HEADER_COLOR
+		header.TextXAlignment = Enum.TextXAlignment.Left
+		header.Text = "Notification"
+		header.Parent = card
 
-        if type(duration) == 'number' and duration > 0 then
-            task.delay(duration, dismiss)
-        end
-        return handle
-    end
+		local titleLbl = Instance.new("TextLabel")
+		titleLbl.Name = "Title"
+		titleLbl.BackgroundTransparency = 1
+		titleLbl.Position = UDim2.new(0, PAD, 0, PAD + 11)
+		titleLbl.Size = UDim2.new(1, -PAD * 2, 0, 18)
+		titleLbl.Font = Enum.Font.GothamBold
+		titleLbl.TextSize = 15
+		titleLbl.TextColor3 = TITLE_COLOR
+		titleLbl.TextXAlignment = Enum.TextXAlignment.Left
+		titleLbl.Text = title
+		titleLbl.Parent = card
 
-    _G.ShowNotification = HyperionNotify
-    getgenv().HyperionShowNotification = HyperionNotify
+		local stateLbl = Instance.new("TextLabel")
+		stateLbl.Name = "State"
+		stateLbl.BackgroundTransparency = 1
+		stateLbl.Position = UDim2.new(0, PAD, 0, PAD + 32)
+		stateLbl.Size = UDim2.new(1, -PAD * 2, 0, 14)
+		stateLbl.Font = Enum.Font.GothamMedium
+		stateLbl.TextSize = 12
+		stateLbl.TextColor3 = on and ON_COLOR or OFF_COLOR
+		stateLbl.TextXAlignment = Enum.TextXAlignment.Left
+		stateLbl.Text = state
+		stateLbl.Parent = card
+
+		local padFrame = Instance.new("Frame")
+		padFrame.BackgroundTransparency = 1
+		padFrame.Size = UDim2.new(1, 0, 0, PAD - 2)
+		padFrame.Parent = card
+
+		return card
+	end
+
+	local function Notify(moduleName, state, duration)
+		local dur = tonumber(duration) or DEFAULT_DUR
+		if dur <= 0 then dur = DEFAULT_DUR end
+
+		local s   = getStack()
+		local cfg = currentPos()
+		local card = makeCard(tostring(moduleName or "Notification"), tostring(state or ""))
+
+		card.LayoutOrder = cfg.grow.Y < 0 and -(#_cards + 1) or (#_cards + 1)
+		card.BackgroundTransparency = 1
+		card.Position = UDim2.new(0, cfg.grow.X * 20, 0, cfg.grow.Y * 20)
+		for _, d in ipairs(card:GetDescendants()) do
+			if d:IsA("GuiObject") then
+				if d:IsA("TextLabel") then
+					d.TextTransparency = 1
+				elseif d:IsA("UIStroke") then
+					d.Transparency = 1
+				elseif d:IsA("ImageLabel") then
+					d.ImageTransparency = 1
+				else
+					d.BackgroundTransparency = 1
+				end
+			end
+		end
+
+		table.insert(_cards, card)
+		card.Parent = s
+
+		local tIn = TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+		TweenService:Create(card, tIn, { BackgroundTransparency = GLASS_BG_T, Position = UDim2.new(0, 0, 0, 0) }):Play()
+		for _, d in ipairs(card:GetDescendants()) do
+			if d:IsA("Frame") and d.Name ~= "Shadow" then
+				TweenService:Create(d, tIn, { BackgroundTransparency = (d == card) and GLASS_BG_T or 1 }):Play()
+			elseif d:IsA("TextLabel") then
+				TweenService:Create(d, tIn, { TextTransparency = 0 }):Play()
+			elseif d:IsA("UIStroke") then
+				TweenService:Create(d, tIn, { Transparency = STROKE_T }):Play()
+			elseif d:IsA("ImageLabel") then
+				TweenService:Create(d, tIn, { ImageTransparency = SHADOW_T }):Play()
+			end
+		end
+
+		local gone = false
+		local function dismiss()
+			if gone then return end
+			gone = true
+			local idx = table.find(_cards, card)
+			if idx then table.remove(_cards, idx) end
+
+			local tOut = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+			TweenService:Create(card, tOut, { BackgroundTransparency = 1, Position = UDim2.new(0, cfg.grow.X * 20, 0, cfg.grow.Y * 20) }):Play()
+			for _, d in ipairs(card:GetDescendants()) do
+				if d:IsA("GuiObject") then
+					local props: any = {}
+					if d:IsA("TextLabel") then props.TextTransparency = 1
+					elseif d:IsA("UIStroke") then props.Transparency = 1
+					elseif d:IsA("ImageLabel") then props.ImageTransparency = 1
+					else props.BackgroundTransparency = 1 end
+					TweenService:Create(d, tOut, props):Play()
+				end
+			end
+			task.delay(0.22, function() pcall(function() card:Destroy() end) end)
+		end
+
+		task.delay(dur, dismiss)
+
+		card.InputBegan:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+				task.delay(0, dismiss)
+			end
+		end)
+	end
+
+	function NOTIF.CreateNotification(moduleName, state, duration)
+		Notify(moduleName, state, duration)
+	end
+
+	function NOTIF.SetLocation(loc: string)
+		if POS[loc] then
+			_currentLocation = loc
+			repositionStack()
+		end
+	end
+
+	function NOTIF.GetLocation()
+		return _currentLocation
+	end
+
+	Library.NotifySystem = NOTIF
 end
 
 local mouse = Players.LocalPlayer:GetMouse()
@@ -3767,5 +3884,20 @@ end
     return self
 end
 
+-- Global notification API
 getgenv().HyperionLibrary = Library
+getgenv().CreateNotification = function(moduleName, state, duration)
+	if Library.NotifySystem then
+		Library.NotifySystem.CreateNotification(moduleName, state, duration)
+	end
+end
+getgenv().NotificationLocation = setmetatable({}, {
+	__index = function() return Library.NotifySystem and Library.NotifySystem.GetLocation() or "BottomRight" end,
+	__newindex = function(_, _, v)
+		if Library.NotifySystem then
+			Library.NotifySystem.SetLocation(v)
+		end
+	end,
+})
+
 return Library
